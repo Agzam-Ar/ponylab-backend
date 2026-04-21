@@ -55,25 +55,36 @@ class GreenhouseServer:
         if not image:
             self._analysis_cache = {"error": "No image available"}
             return
-
+    
         try:
             state = await self.get_sensors()
             result = analyze(image, state)
+    
+            # LOGIC модуль: корректирует и отправляет параметры в теплицу
+            adjusted = await self.controller.process(result, state)
+    
             self._analysis_cache = {
-                "stage": result.growth_stage,
-                "health": result.health,
-                "disease": result.disease,
-                "params": result.recommended_params,
+                "stage":           result.growth_stage,
+                "health":          result.health,
+                "disease":         result.disease,
+                "params_ai":       result.recommended_params,  # что рекомендовал AI
+                "params_applied":  adjusted,                    # что реально установили
             }
+    
+            # Логируем анализ
+            self.plant_log.log_ai_analysis(result)
+    
         except Exception as e:
+            print(f"[Server] Analysis error: {e}")
             self._analysis_cache = {
-                "stage": "unknown",
-                "health": 0.5,
-                "disease": "unavailable",
-                "params": {},
+                "stage":      "unknown",
+                "health":     0.5,
+                "disease":    "unavailable",
+                "params_ai":  {},
+                "params_applied": {},
                 "last_error": str(e),
             }
-
+        
     def get_analysis(self):
         return self._analysis_cache
 
