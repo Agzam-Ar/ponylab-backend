@@ -2,9 +2,13 @@ import os
 import io
 from pathlib import Path
 from typing import Optional
-from picamera2 import Picamera2
 
-PICAMERA2_AVAILABLE = True
+picamera2_available = True
+try:
+    from picamera2 import Picamera2
+except Exception:
+    picamera2_available = False
+
 PLACEHOLDER_PATH = Path(__file__).parent / "placeholder.png"
 print(f"placeholder: {PLACEHOLDER_PATH}")
 
@@ -12,7 +16,7 @@ print(f"placeholder: {PLACEHOLDER_PATH}")
 class Camera:
     def __init__(self):
         self._cam: Optional[object] = None
-        self._use_placeholder = not PICAMERA2_AVAILABLE
+        self._use_placeholder = not picamera2_available
 
     def _ensure_camera(self):
         if self._cam is None and not self._use_placeholder:
@@ -42,4 +46,3 @@ class Camera:
 
     def get_stream(self) -> bytes:
         return self.capture()
-
