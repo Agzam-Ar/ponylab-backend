@@ -30,13 +30,13 @@ def encode_image(image_bytes: bytes) -> str:
 def analyze(image_bytes: bytes, sensor_data: dict) -> AnalysisResult:
     print(f"Prompt to {LLM_BASE_URL}")
     client = OpenAI(
-        base_url=LLM_BASE_URL, api_key=LLM_API_KEY, timeout=httpx.Timeout(120.0)
+        base_url=LLM_BASE_URL, api_key=LLM_API_KEY, timeout=httpx.Timeout(120000.0)
     )
 
     b64 = encode_image(image_bytes)
     user_prompt = f"""Данные датчиков: {json.dumps(sensor_data)}
 Проанализируй растение на фото."""
-
+    print(f"Prompt: {user_prompt}")
     response = client.chat.completions.create(
         model="local-model",
         messages=[
@@ -55,17 +55,21 @@ def analyze(image_bytes: bytes, sensor_data: dict) -> AnalysisResult:
         response_format={"type": "json_object"},
         temperature=0,
     )
-
-    data = json.loads(response.choices[0].message.content)
-    print(f"Result: {data}")
-    return AnalysisResult(
-        growth_stage=data.get("growth_stage", "Не определено"),
-        health=float(data.get("health", 0.5)),
-        disease=data.get("disease", "healthy"),
-        recommended_params={
-            "temp": data.get("recommended_temp", 25),
-            "humidity": data.get("recommended_humidity", 60),
-            "ec": data.get("recommended_ec", 1.8),
-            "ph": data.get("recommended_ph", 6.0),
-        },
-    )
+    print(f"response ready!")
+    try:
+        print(f"{response.choices}")
+        data = json.loads(response.choices[0].message.content)
+        print(f"Result: {data}")
+        return AnalysisResult(
+            growth_stage=data.get("growth_stage", "Не определено"),
+            health=float(data.get("health", 0.5)),
+            disease=data.get("disease", "healthy"),
+            recommended_params={
+                "temp": data.get("recommended_temp", 25),
+                "humidity": data.get("recommended_humidity", 60),
+                "ec": data.get("recommended_ec", 1.8),
+                "ph": data.get("recommended_ph", 6.0),
+            },
+        )
+    except Exception as e:
+        print(f"An error occurred: {e}")
