@@ -48,7 +48,6 @@ class GreenhouseState:
 
 
 async def fetch_state() -> GreenhouseState:
-    print("fetch_state")
 
     def fetch_value(values: Any, index: int, default: str | float):
         if index < len(values) and "v" in values[index]:
@@ -59,16 +58,12 @@ async def fetch_state() -> GreenhouseState:
         for base in URLS:
             for path in ["/state"]:
                 url = f"{base}{path}" if base.endswith("/") else f"{base}{path}"
-                print(f"Url: {url}")
                 try:
                     resp = await client.get(url)
                 except Exception:
-                    print(f"Warning: can't connect to {url}")
                     continue
-                print(f"Fetch: {url} with status: {resp.status_code}")
                 if resp.status_code == 200:
                     data = resp.json()
-                    print(f"Data: {data}")
                     v = data.get("values", [])
                     state = GreenhouseState(
                         values=SensorValues(
@@ -89,7 +84,6 @@ async def fetch_state() -> GreenhouseState:
                     return state
                 else:
                     continue
-    print(f"Warning Yieldizers not found")
     # raise ConnectionError(f"Cannot reach Yieldizer at {BASE_URL}")
     return GreenhouseState(
         values=SensorValues(
