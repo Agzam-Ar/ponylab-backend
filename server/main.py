@@ -55,7 +55,7 @@ class GreenhouseServer:
         if not image:
             self._analysis_cache = {"error": "No image available"}
             return
-    
+
         try:
             state = await self.get_sensors()
             result = analyze(image, state)
@@ -64,11 +64,10 @@ class GreenhouseServer:
             adjusted = await self.controller.process(result, state)
     
             self._analysis_cache = {
-                "stage":           result.growth_stage,
-                "health":          result.health,
-                "disease":         result.disease,
-                "params_ai":       result.recommended_params,  # что рекомендовал AI
-                "params_applied":  adjusted,                    # что реально установили
+                "stage": result.growth_stage,
+                "health": result.health,
+                "disease": result.disease,
+                "params": adjusted,
             }
     
             # Логируем анализ
@@ -80,11 +79,10 @@ class GreenhouseServer:
                 "stage":      "unknown",
                 "health":     0.5,
                 "disease":    "unavailable",
-                "params_ai":  {},
-                "params_applied": {},
+                "params":  {},
                 "last_error": str(e),
             }
-        
+
     def get_analysis(self):
         return self._analysis_cache
 
