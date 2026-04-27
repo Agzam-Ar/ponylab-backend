@@ -9,7 +9,7 @@ PlantValue = int | float | str
 
 @dataclass
 class PlantRule:
-    value: int | float | str
+    value: int | float | None
     min: int | float | None
     max: int | float | None
 
@@ -62,22 +62,22 @@ class PlantRules:
                 param = str(row["param"])
                 self._keys.append(param)
                 rules[param] = PlantRule(
-                    value=row["value"],
+                    value=auto_type(row["value"]),
                     min=auto_type(row["min"]),
                     max=auto_type(row["max"]),
                 )
         return rules
 
-    # def get_default(self, param: str) -> float:
-    #     """Дефолтное значение параметра из CSV."""
-    #     return self._table.get(param, self._defaults().get(param, {})).get("value", 0)
+    def iter(self):
+        return self._table.items()
 
-    # def get_bounds(self, param: str) -> tuple[float, float]:
-    #     """Возвращает (min, max) для параметра."""
-    #     entry = self._table.get(
-    #         param, self._defaults().get(param, {"min": 0, "max": 9999})
-    #     )
-    #     return entry["min"], entry["max"]
+    def specification(self):
+        return ",\n".join(
+            [
+                f'"recommended_{parm}": {self._table[parm].range()}'
+                for parm in self._table.keys()
+            ]
+        )
 
     def adjust_ai_params(self, ai_params: PlantParms) -> PlantParms:
         """
@@ -90,5 +90,10 @@ class PlantRules:
                 before = ai_params[parm]
                 ai_params[parm] = rule.clamp(before)
                 if ai_params[parm] != before:
-                    print(f"[PlantRules] 'key' clamped: {before} -> {ai_params[parm]}")
+                    print(f"[PlantRules] {parm} clamped: {before} -> {ai_params[parm]}")
         return ai_params
+
+
+@dataclass
+class Rules:
+    tomato = PlantRules("tomato")

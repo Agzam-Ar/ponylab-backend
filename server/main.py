@@ -3,27 +3,34 @@ import os
 import sys
 from pathlib import Path
 
+from server.config import Config
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Response
 from fastapi.responses import StreamingResponse
-from contextlib import asynccontextmanager
 
-from data.yieldizer import fetch_state, send_command, set_parameter
-from camera.capture import Camera
 from ai.analyze import analyze
+from camera.capture import Camera
+from data.yieldizer import fetch_state, send_command, set_parameter
 from logic.control import Controller
 from logs.plant_log import PlantLog
-
 
 REFRESH_TIME = int(os.getenv("REFRESH_TIME", 60 * 10))
 PLANT_TYPE = os.getenv("PLANT_TYPE", "tomato")
 
 
 class GreenhouseServer:
+    camera: Camera
+    controller: Controller
+    plant_log: PlantLog
+
     def __init__(self):
         self.camera = Camera()
-        self.controller = Controller(PLANT_TYPE)
+
+        self.controller = Controller(Config.rules)
         self.plant_log = PlantLog("plant1")
         self._state_cache = {}
         self._analysis_cache = {}
@@ -60,7 +67,7 @@ class GreenhouseServer:
             state = await self.get_sensors()
 
             result = await asyncio.to_thread(analyze, image, state)
-    
+
             # LOGIC модуль: корректирует и отправляет параметры в теплицу
             adjusted = await self.controller.process(result, state)
 
@@ -70,17 +77,17 @@ class GreenhouseServer:
                 "disease": result.disease,
                 "params": adjusted,
             }
-    
+
             # Логируем анализ
             self.plant_log.log_ai_analysis(result)
-    
+
         except Exception as e:
             print(f"[Server] Analysis error: {e}")
             self._analysis_cache = {
-                "stage":      "unknown",
-                "health":     0.5,
-                "disease":    "unavailable",
-                "params":  {},
+                "stage": "unknown",
+                "health": 0.5,
+                "disease": "unavailable",
+                "params": {},
                 "last_error": str(e),
             }
 
