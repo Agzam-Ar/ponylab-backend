@@ -61,6 +61,12 @@ class Controller:
         try:
             # Отправка расписания света на сервер
             # Свет имеет только режим m=3 (расписание)
+            irrigation_delay = int(86400 / params.get("irrigation_pulses", 1))
+            irrigation_sec = int(params.get("irrigation_sec", 1))
+            if irrigation_sec > irrigation_delay:
+                irrigation_delay = irrigation_sec + 1
+            irrigation_delay = irrigation_delay - irrigation_sec
+
             _ = await send_timers(
                 [
                     Timer(
@@ -75,7 +81,14 @@ class Controller:
                                 )
                             ],
                         ),
-                    )
+                    ),
+                    Timer(
+                        m=2,
+                        data=TimerData(
+                            t1=irrigation_sec,
+                            t2=irrigation_delay,
+                        ),
+                    ),
                 ]
             )
         except Exception:
