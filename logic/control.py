@@ -103,30 +103,18 @@ class Controller:
         self._last_stage: str | None = None
 
     async def process(self, ai_result: AnalysisResult, current_sensors: dict) -> dict:
-        """
-        Основной метод обработки:
-        1. Берёт стадию роста и рекомендации от AI
-        2. Корректирует по таблице границ
-        3. Отправляет скорректированные параметры в теплицу
-        4. Возвращает итоговые параметры
-
-        Args:
-            ai_result: AnalysisResult из ai.analyze
-            current_sensors: текущие показания датчиков (для логирования)
-        """
         stage = ai_result.growth_stage or "default"
         ai_params = ai_result.recommended_params
-
+    
         print(f"[Controller] Stage: '{stage}'")
         print(f"[Controller] AI recommended: {ai_params}")
-
-        # Корректируем параметры по таблице
-        adjusted = self.rules.adjust_ai_params(ai_params, stage)
+    
+        # stage теперь только для логирования, clamp по единым границам CSV
+        adjusted = self.rules.adjust_ai_params(ai_params)
         print(f"[Controller] Adjusted params: {adjusted}")
-
-        # Отправляем в теплицу
+    
         await self._apply_params(adjusted)
-
+    
         self._last_params = adjusted
         self._last_stage = stage
         return adjusted
