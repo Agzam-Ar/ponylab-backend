@@ -14,11 +14,6 @@ PLANT_DATA_DIR = Path(__file__).parent.parent / "data" / "plants"
 
 
 class PlantRules:
-    """
-    Загружает таблицу допустимых границ параметров из CSV-файла
-    и корректирует рекомендации AI так, чтобы они не выходили за эти границы.
-    """
-
     def __init__(self, plant_type: str = "tomato"):
         self.plant_type = plant_type
         self._table: dict = self._load_table(plant_type)
@@ -33,73 +28,52 @@ class PlantRules:
         with open(path, newline="") as f:
             reader = csv.DictReader(f)
             for row in reader:
-                stage = row.get("stage", "default")
-                rules[stage] = {
-                    "temp_min": float(row.get("temp_min", 20)),
-                    "temp_max": float(row.get("temp_max", 28)),
-                    "humidity_min": float(row.get("humidity_min", 50)),
-                    "humidity_max": float(row.get("humidity_max", 70)),
-                    "ec_min": float(row.get("ec_min", 1.2)),
-                    "ec_max": float(row.get("ec_max", 2.5)),
-                    "ph_min": float(row.get("ph_min", 5.8)),
-                    "ph_max": float(row.get("ph_max", 6.5)),
+                param = row["param"]
+                rules[param] = {
+                    "value": float(row["value"]),
+                    "min": float(row["min"]),
+                    "max": float(row["max"]),
                 }
-        print(f"[PlantRules] Loaded stages: {list(rules.keys())}")
+        print(f"[PlantRules] Loaded params: {list(rules.keys())}")
         return rules
 
     def _defaults(self) -> dict:
         return {
-            "default": {
-                "temp_min": 20,
-                "temp_max": 28,
-                "humidity_min": 50,
-                "humidity_max": 70,
-                "ec_min": 1.2,
-                "ec_max": 2.5,
-                "ph_min": 5.8,
-                "ph_max": 6.5,
-            }
+            "temp": {"value": 24, "min": 20, "max": 28},
+            "humidity": {"value": 60, "min": 50, "max": 70},
+            "ec": {"value": 1.8, "min": 1.2, "max": 2.5},
+            "ph": {"value": 6.2, "min": 5.8, "max": 6.5},
+            "light_duration": {"value": 16, "min": 12, "max": 18},
         }
 
-    def get_bounds(self, stage: str = "default") -> dict:
-        """
-        Возвращает границы для стадии.
-        Если стадия не найдена — ищет 'default'.
-        """
-        return self._table.get(
-            stage, self._table.get("default", self._defaults()["default"])
-        )
+    def get_default(self, param: str) -> float:
+        """Дефолтное значение параметра из CSV."""
+        return self._table.get(param, self._defaults().get(param, {})).get("value", 0)
 
-    def adjust_ai_params(self, ai_params: dict, stage: str = "default") -> dict:
-        """
-        Корректирует параметры AI: зажимает каждый в допустимые границы.
-        Возвращает новый словарь (не мутирует входной).
-        """
-        bounds = self.get_bounds(stage)
+    def get_bounds(self, param: str) -> tuple[float, float]:
+        """Возвращает (min, max) для параметра."""
+        entry = self._table.get(
+            param, self._defaults().get(param, {"min": 0, "max": 9999})
+        )
+        return entry["min"], entry["max"]
 
-        adjusted = ai_params.copy()
-        adjusted["temp"] = self._clamp(
-            ai_params.get("temp", 25), bounds["temp_min"], bounds["temp_max"]
-        )
-        adjusted["humidity"] = self._clamp(
-            ai_params.get("humidity", 60),
-            bounds["humidity_min"],
-            bounds["humidity_max"],
-        )
-        adjusted["ec"] = self._clamp(
-            ai_params.get("ec", 1.8), bounds["ec_min"], bounds["ec_max"]
-        )
-        adjusted["ph"] = self._clamp(
-            ai_params.get("ph", 6.0), bounds["ph_min"], bounds["ph_max"]
-        )
+    def adjust_ai_params(self, ai_params: dict) -> dict:
+        """
+        Зажимает каждый параметр AI в допустимые границы из CSV.
+        stage больше не используется — диапазоны единые.
+        """
+        adjusted = {}
+        params_to_clamp = ["temp", "humidity", "ec", "ph", "light_duration"]
 
-        # Логируем что было скорректировано
-        for key in adjusted:
-            original = ai_params.get(key)
-            if original is not None and original != adjusted[key]:
+        for key in params_to_clamp:
+            lo, hi = self.get_bounds(key)
+            default = self.get_default(key)
+            raw = ai_params.get(key, default)
+            clamped = self._clamp(raw, lo, hi)
+            adjusted[key] = clamped
+            if raw != clamped:
                 print(
-                    f"[PlantRules] '{key}' clamped: {original} -> {adjusted[key]}"
-                    f" (bounds: {bounds[key + '_min']} – {bounds[key + '_max']})"
+                    f"[PlantRules] '{key}' clamped: {raw} -> {clamped} (bounds: {lo} – {hi})"
                 )
 
         return adjusted
@@ -133,28 +107,16 @@ class Controller:
         self._last_stage: str | None = None
 
     async def process(self, ai_result: AnalysisResult, current_sensors: dict) -> dict:
-        """
-        Основной метод обработки:
-        1. Берёт стадию роста и рекомендации от AI
-        2. Корректирует по таблице границ
-        3. Отправляет скорректированные параметры в теплицу
-        4. Возвращает итоговые параметры
-
-        Args:
-            ai_result: AnalysisResult из ai.analyze
-            current_sensors: текущие показания датчиков (для логирования)
-        """
         stage = ai_result.growth_stage or "default"
         ai_params = ai_result.recommended_params
 
         print(f"[Controller] Stage: '{stage}'")
         print(f"[Controller] AI recommended: {ai_params}")
 
-        # Корректируем параметры по таблице
-        adjusted = self.rules.adjust_ai_params(ai_params, stage)
+        # stage теперь только для логирования, clamp по единым границам CSV
+        adjusted = self.rules.adjust_ai_params(ai_params)
         print(f"[Controller] Adjusted params: {adjusted}")
 
-        # Отправляем в теплицу
         await self._apply_params(adjusted)
 
         self._last_params = adjusted
@@ -162,14 +124,12 @@ class Controller:
         return adjusted
 
     async def _apply_params(self, params: dict) -> None:
-        """
-        Отправляет каждый параметр в теплицу через DATA модуль.
-        Ошибки не останавливают обработку остальных параметров.
-        """
         try:
-            # Отправка расписания света на сервер
-            # Свет имеет только режим m=3 (расписание)
-            light_duration = int(params.get("light_duration", 16)) * 3600
+            raw_duration = params.get("light_duration", 16)
+            # clamp на случай прямого вызова минуя adjust_ai_params
+            light_hours = self._clamp_light(raw_duration)
+            light_seconds = int(light_hours) * 3600
+
             _ = await send_timers(
                 [
                     Timer(
@@ -177,7 +137,7 @@ class Controller:
                         data=TimerData(
                             dbegin=0,
                             dskip=0,
-                            table=[TableItem(t1=25200, t2=light_duration)],
+                            table=[TableItem(t1=25200, t2=light_seconds)],
                         ),
                     )
                 ]
@@ -187,7 +147,9 @@ class Controller:
 
         for param_name, value in params.items():
             if param_name not in YIELDIZER_PARAM_MAP:
-                print(f"[Controller] Unknown param '{param_name}', skipping")
+                # light_duration не в MAP — это нормально, уже обработан выше
+                if param_name != "light_duration":
+                    print(f"[Controller] Unknown param '{param_name}', skipping")
                 continue
 
             ns, key = YIELDIZER_PARAM_MAP[param_name]
@@ -199,6 +161,11 @@ class Controller:
                     print(f"[Controller] Failed to set {ns}/{key} = {value}")
             except Exception as e:
                 print(f"[Controller] Error setting {ns}/{key}: {e}")
+
+    @staticmethod
+    def _clamp_light(val: float) -> float:
+        """light_duration: от 12 до 18 часов."""
+        return max(12.0, min(18.0, float(val)))
 
     def get_last_params(self) -> Optional[dict]:
         return self._last_params
