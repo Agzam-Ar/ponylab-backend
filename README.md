@@ -54,6 +54,7 @@ REFRESH_TIME=60
 LLM_BASE_URL=http://127.0.0.1:11435/v1
 PLANT_TYPE=tomato
 PORT=8080
+LLM_SKIP=False
 ```
 
 ## Run
