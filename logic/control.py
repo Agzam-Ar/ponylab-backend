@@ -6,8 +6,8 @@ import trace
 from typing import Any, Optional
 from ai.analyze import AnalysisResult
 import data
-from data.models import Timer, TimerData, TableItem
-from data.yieldizer import set_parameter, send_timers
+from data.models import Clim, ClimateControl, Timer, TimerData, TableItem
+from data.yieldizer import fetch_state, send_climate, set_parameter, send_timers
 import traceback
 
 from logic.rules import PlantParms, PlantRules
@@ -58,8 +58,16 @@ class Controller:
         return adjusted
 
     async def _apply_params(self, params: PlantParms) -> None:
+        state = await fetch_state()
+
+        # Световой день
+        light_begin = 25200
+        light_end = int(params.get("light_duration", 16)) * 3600
+        is_day = light_begin <= state.time <= light_end
+        print(f"[Controller] Is day: {is_day}")
+
         try:
-            # Отправка расписания света на сервер
+            # Отправка расписания света и полива на сервер
             # Свет имеет только режим m=3 (расписание)
             irrigation_delay = int(86400 / params.get("irrigation_pulses", 1))
             irrigation_sec = int(params.get("irrigation_sec", 1))
@@ -74,12 +82,7 @@ class Controller:
                         data=TimerData(
                             dbegin=0,
                             dskip=0,
-                            table=[
-                                TableItem(
-                                    t1=25200,
-                                    t2=int(params.get("light_duration", 16)) * 3600,
-                                )
-                            ],
+                            table=[TableItem(t1=light_begin, t2=light_end)],
                         ),
                     ),
                     Timer(
@@ -94,6 +97,61 @@ class Controller:
         except Exception:
             traceback.print_exc()
 
+        try:
+            # Отправка настроек климата на сервер
+            # Yieldizer дает настроить только на общую логику,
+            # поэтому ручное определение день/ночь
+            temp_day = int(params.get("temp_day", 25))
+            temp_night = int(params.get("temp_night", 20))
+            temp_target = temp_day if is_day else temp_night
+            temp_margin = 2
+
+            _ = await send_climate(
+                Clim(
+                    air_cooler=ClimateControl(
+                        thr_on=temp_target + temp_margin,
+                        thr_off=temp_target - temp_margin,
+                        t_on_min=3,
+                        t_on_max=30,
+                        t_pause=5,
+                    ),
+                    heater=ClimateControl(
+                        thr_on=temp_target - temp_margin,
+                        thr_off=temp_target + temp_margin,
+                        t_on_min=1,
+                        t_on_max=20,
+                        t_pause=2,
+                    ),
+                    extractor_t=ClimateControl(
+                        thr_on=temp_target + temp_margin,
+                        thr_off=temp_target - temp_margin,
+                        t_on_min=3,
+                        t_on_max=30,
+                        t_pause=5,
+                    ),
+                    # TODO: Remove placeholders
+                    # Увлажнитель
+                    humidifier=ClimateControl(
+                        thr_on=50, thr_off=55, t_on_min=0.5, t_on_max=10, t_pause=0.5
+                    ),
+                    # Осушитель
+                    dehumidifier=ClimateControl(
+                        thr_on=70, thr_off=60, t_on_min=6, t_on_max=60, t_pause=3
+                    ),
+                    extractor_h=ClimateControl(
+                        thr_on=60, thr_off=55, t_on_min=0.5, t_on_max=10, t_pause=0.5
+                    ),
+                    co2=ClimateControl(
+                        thr_on=1100,
+                        thr_off=1200,
+                        t_on_min=3,
+                        t_on_max=10,
+                        t_pause=0,
+                    ),
+                )
+            )
+        except Exception:
+            traceback.print_exc()
         # for param_name, value in params.items():
         #     if param_name not in YIELDIZER_PARAM_MAP:
         #         # light_duration не в MAP — это нормально, уже обработан выше

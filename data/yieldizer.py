@@ -1,14 +1,11 @@
-import time
-from typing import Any
-from click import command
-import httpx
 import os
-import re
 from dataclasses import dataclass
+from typing import Any
 from urllib.parse import urlparse
 
-from openai import BaseModel
-from data.models import Config, Env, Timer
+import httpx
+
+from data.models import Clim, Config, Env, Timer
 
 BASE_URL = os.getenv("YIELDIZER_URL", "http://127.0.0.1:3001")
 
@@ -47,6 +44,7 @@ class GreenhouseState:
     values: SensorValues
     description: str
     uptime: int
+    time: int
     wifi: int
     errors: list
 
@@ -82,6 +80,7 @@ async def fetch_state() -> GreenhouseState:
                         ),
                         description=data.get("description", ""),
                         uptime=data.get("uptime", 0),
+                        time=data.get("time", 0),
                         wifi=data.get("wifi", 0),
                         errors=data.get("errors", []),
                     )
@@ -102,9 +101,14 @@ async def fetch_state() -> GreenhouseState:
         ),
         description=" I use arch, BTW ",
         uptime=123,
+        time=0,
         wifi=1,
         errors=[],
     )
+
+
+async def send_climate(clim: Clim):
+    return await post("/cfg", Config(clim=clim).model_dump_json(exclude_none=True))
 
 
 async def send_timers(timers: list[Timer]):
