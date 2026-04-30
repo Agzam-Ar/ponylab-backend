@@ -123,11 +123,11 @@ async def post(path: str, body: str) -> bool:
         for base in URLS:
             try:
                 url = f"{base}{path}" if base.endswith("/") else f"{base}{path}"
-                print(f"POST on {url} with {body}")
                 resp = await client.post(url, data=form_data)
-                print(f"Response: {resp.status_code} {resp.text}")
                 if resp.status_code == 200:
                     return resp.text == "ok"
+                print(f"POST on {url} with {body}")
+                print(f"Response: {resp.status_code} {resp.text}")
             except Exception as e:
                 print(f"Error: {e}")
                 continue

@@ -1,11 +1,11 @@
 import json
 import base64
-from typing import Any
 import httpx
 import os
 from dataclasses import dataclass
 from openai import OpenAI
 
+from data.yieldizer import GreenhouseState
 from logic.rules import PlantParms, auto_type
 from server.config import Config
 
@@ -45,19 +45,19 @@ def encode_image(image_bytes: bytes) -> str:
     return base64.b64encode(image_bytes).decode("utf-8")
 
 
-def analyze(image_bytes: bytes, sensor_data: dict[str, Any]) -> AnalysisResult:
+def analyze(image_bytes: bytes, state: GreenhouseState) -> AnalysisResult:
     if SKIP_AI:
         print("[analyze] Warning: AI skip")
-        parms: PlantParms = {}
+        recommended_parms: PlantParms = {}
         for parm, rule in Config.rules.iter():
             if rule.value is not None:
-                parms[parm] = rule.value
+                recommended_parms[parm] = rule.value
 
         return AnalysisResult(
             growth_stage="Бебебе",
             health=0.77,
             disease="Здоров",
-            recommended_params=parms,
+            recommended_params=recommended_parms,
         )
     print(f"Prompt to {LLM_BASE_URL}")
     client = OpenAI(
@@ -65,7 +65,9 @@ def analyze(image_bytes: bytes, sensor_data: dict[str, Any]) -> AnalysisResult:
     )
 
     b64 = encode_image(image_bytes)
-    user_prompt = f"""Данные датчиков: {json.dumps(sensor_data)}\nПроанализируй растение на фото."""
+    user_prompt = (
+        f"""Данные датчиков: {json.dumps(state)}\nПроанализируй растение на фото."""
+    )
     print(f"Prompt: {user_prompt}")
     response = client.chat.completions.create(
         model="local-model",
@@ -85,10 +87,10 @@ def analyze(image_bytes: bytes, sensor_data: dict[str, Any]) -> AnalysisResult:
         response_format={"type": "json_object"},
         temperature=0,
     )
-    print(f"response ready!")
+    print("response ready!")
     try:
         print(f"{response.choices}")
-        data = json.loads(response.choices[0].message.content)
+        data = json.loads(response.choices[0].message.content or "")
         print(f"Result: {data}")
         parms: PlantParms = {}
         for parm, rule in Config.rules.iter():

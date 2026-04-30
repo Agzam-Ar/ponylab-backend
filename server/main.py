@@ -64,7 +64,8 @@ class GreenhouseServer:
             return
 
         try:
-            state = await self.get_sensors()
+            state = await fetch_state()
+            # state = await self.get_sensors()
 
             result = await asyncio.to_thread(analyze, image, state)
 

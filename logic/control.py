@@ -1,3 +1,4 @@
+from ast import For
 import csv
 import os
 import json
@@ -7,9 +8,15 @@ from typing import Any, Optional
 from ai.analyze import AnalysisResult
 import data
 from data.models import Clim, ClimateControl, Timer, TimerData, TableItem
-from data.yieldizer import fetch_state, send_climate, set_parameter, send_timers
+from data.yieldizer import (
+    GreenhouseState,
+    fetch_state,
+    send_climate,
+    set_parameter,
+    send_timers,
+)
 import traceback
-
+from colorama import Fore
 from logic.rules import PlantParms, PlantRules
 
 PLANT_DATA_DIR = Path(__file__).parent.parent / "data" / "plants"
@@ -23,6 +30,10 @@ YIELDIZER_PARAM_MAP = {
     "ec": ("nsolution", "ec_target"),
     "ph": ("nsolution", "ph_target"),
 }
+
+
+def log(*values: object):
+    print(*values)
 
 
 class Controller:
@@ -40,7 +51,7 @@ class Controller:
         self._last_params: dict[Any, Any] | None = None
         self._last_stage: str | None = None
 
-    async def process(self, ai_result: AnalysisResult, current_sensors: dict) -> dict:
+    async def process(self, ai_result: AnalysisResult, state: GreenhouseState) -> dict:
         stage = ai_result.growth_stage or "default"
         ai_params = ai_result.recommended_params
 
@@ -51,29 +62,53 @@ class Controller:
         adjusted = self.rules.adjust_ai_params(ai_params)
         print(f"[Controller] Adjusted params: {adjusted}")
 
-        await self._apply_params(adjusted)
+        await self._apply_params(adjusted, state)
 
         self._last_params = adjusted
         self._last_stage = stage
         return adjusted
 
-    async def _apply_params(self, params: PlantParms) -> None:
-        state = await fetch_state()
-
+    async def _apply_params(self, params: PlantParms, state: GreenhouseState) -> None:
+        log(f"{Fore.GREEN}[Controller -> Yieldizer]{Fore.RESET}")
         # Световой день
         light_begin = 25200
-        light_end = int(params.get("light_duration", 16)) * 3600
+        light_end = light_begin + int(params.get("light_duration", 16)) * 3600
         is_day = light_begin <= state.time <= light_end
-        print(f"[Controller] Is day: {is_day}")
+
+        # Отладочный timeline
+        _bars = 24 * 2
+        _bar_scl = 86400 // _bars
+        _bar = ["─"] * _bars
+        _bar[state.time // _bar_scl] = (
+            Fore.LIGHTYELLOW_EX if is_day else Fore.LIGHTBLACK_EX
+        ) + "⬤"
+        _bar[light_begin // _bar_scl - 1] += Fore.LIGHTYELLOW_EX
+        _bar[light_end // _bar_scl - 1] += Fore.LIGHTBLACK_EX
+
+        print(
+            f"Цикл:  {Fore.LIGHTBLACK_EX}{''.join(_bar)} {Fore.RESET}{state.time // 60 // 60}:{state.time // 60 % 60}"
+        )
 
         try:
             # Отправка расписания света и полива на сервер
             # Свет имеет только режим m=3 (расписание)
-            irrigation_delay = int(86400 / params.get("irrigation_pulses", 1))
+            irrigation_pulses = int(params.get("irrigation_pulses", 1))
+            irrigation_delay = int(86400 / irrigation_pulses)
             irrigation_sec = int(params.get("irrigation_sec", 1))
             if irrigation_sec > irrigation_delay:
                 irrigation_delay = irrigation_sec + 1
             irrigation_delay = irrigation_delay - irrigation_sec
+
+            _bar = [" "] * _bars
+            for i in range(irrigation_pulses):
+                _bar[i * (irrigation_sec + irrigation_delay) // _bar_scl] = (
+                    Fore.LIGHTBLUE_EX + "∴" + Fore.RESET
+                )
+
+            log(f"Полив: {''.join(_bar)}\n")
+            log(
+                f"Полив: {Fore.LIGHTBLUE_EX}{irrigation_sec}{Fore.RESET} секунд с перерывом в {Fore.LIGHTBLUE_EX}{irrigation_delay // 60}{Fore.RESET} минут"
+            )
 
             _ = await send_timers(
                 [
@@ -82,7 +117,9 @@ class Controller:
                         data=TimerData(
                             dbegin=0,
                             dskip=0,
-                            table=[TableItem(t1=light_begin, t2=light_end)],
+                            table=[
+                                TableItem(t1=light_begin, t2=light_end - light_begin)
+                            ],
                         ),
                     ),
                     Timer(
@@ -101,10 +138,23 @@ class Controller:
             # Отправка настроек климата на сервер
             # Yieldizer дает настроить только на общую логику,
             # поэтому ручное определение день/ночь
+
             temp_day = int(params.get("temp_day", 25))
             temp_night = int(params.get("temp_night", 20))
             temp_target = temp_day if is_day else temp_night
             temp_margin = 2
+
+            humidity_day = int(params.get("humidity_day", 65))
+            humidity_night = int(params.get("humidity_night", 60))
+            humidity_target = humidity_day if is_day else humidity_night
+            humidity_margin = 2
+
+            co2_target = int(params.get("co2_target", 1200)) if is_day else 0
+            co2_margin = 100
+
+            log(
+                f"Температура: {Fore.LIGHTGREEN_EX}{temp_target}°C{Fore.RESET}\nВлажность: {Fore.LIGHTGREEN_EX}{humidity_target}%{Fore.RESET}\nCO2: {Fore.LIGHTGREEN_EX}{co2_target} ppm{Fore.RESET}"
+            )
 
             _ = await send_climate(
                 Clim(
@@ -122,6 +172,7 @@ class Controller:
                         t_on_max=20,
                         t_pause=2,
                     ),
+                    # Вытяжка (температура)
                     extractor_t=ClimateControl(
                         thr_on=temp_target + temp_margin,
                         thr_off=temp_target - temp_margin,
@@ -129,30 +180,42 @@ class Controller:
                         t_on_max=30,
                         t_pause=5,
                     ),
-                    # TODO: Remove placeholders
                     # Увлажнитель
                     humidifier=ClimateControl(
-                        thr_on=50, thr_off=55, t_on_min=0.5, t_on_max=10, t_pause=0.5
+                        thr_on=humidity_target - humidity_margin,
+                        thr_off=humidity_target + humidity_margin,
+                        t_on_min=0.5,
+                        t_on_max=10,
+                        t_pause=0.5,
                     ),
                     # Осушитель
                     dehumidifier=ClimateControl(
-                        thr_on=70, thr_off=60, t_on_min=6, t_on_max=60, t_pause=3
+                        thr_on=humidity_target + humidity_margin,
+                        thr_off=humidity_target - humidity_margin,
+                        t_on_min=6,
+                        t_on_max=60,
+                        t_pause=3,
                     ),
+                    # Вытяжка (влажность)
                     extractor_h=ClimateControl(
-                        thr_on=60, thr_off=55, t_on_min=0.5, t_on_max=10, t_pause=0.5
+                        thr_on=humidity_target + humidity_margin,
+                        thr_off=humidity_target - humidity_margin,
+                        t_on_min=0.5,
+                        t_on_max=10,
+                        t_pause=0.5,
                     ),
                     co2=ClimateControl(
-                        thr_on=1100,
-                        thr_off=1200,
+                        thr_on=co2_target - co2_margin if is_day else 0,
+                        thr_off=co2_target + co2_margin if is_day else 1,
                         t_on_min=3,
                         t_on_max=10,
-                        t_pause=0,
+                        t_pause=3,
                     ),
                 )
             )
         except Exception:
             traceback.print_exc()
-        # for param_name, value in params.items():
+
         #     if param_name not in YIELDIZER_PARAM_MAP:
         #         # light_duration не в MAP — это нормально, уже обработан выше
         #         if param_name != "light_duration":
