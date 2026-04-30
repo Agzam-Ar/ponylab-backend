@@ -1,22 +1,14 @@
-from ast import For
-import csv
-import os
-import json
+import traceback
 from pathlib import Path
-import trace
-from typing import Any, Optional
+from colorama import Fore
+
 from ai.analyze import AnalysisResult
-import data
-from data.models import Clim, ClimateControl, Timer, TimerData, TableItem
+from data.models import Clim, ClimateControl, TableItem, Timer, TimerData
 from data.yieldizer import (
     GreenhouseState,
-    fetch_state,
     send_climate,
-    set_parameter,
     send_timers,
 )
-import traceback
-from colorama import Fore
 from logic.rules import PlantParms, PlantRules
 
 PLANT_DATA_DIR = Path(__file__).parent.parent / "data" / "plants"
@@ -48,19 +40,15 @@ class Controller:
 
     def __init__(self, rules: PlantRules):
         self.rules = rules
-        self._last_params: dict[Any, Any] | None = None
+        self._last_params: PlantParms | None = None
         self._last_stage: str | None = None
 
-    async def process(self, ai_result: AnalysisResult, state: GreenhouseState) -> dict:
+    async def process(self, ai_result: AnalysisResult, state: GreenhouseState):
         stage = ai_result.growth_stage or "default"
         ai_params = ai_result.recommended_params
 
-        print(f"[Controller] Stage: '{stage}'")
-        print(f"[Controller] AI recommended: {ai_params}")
-
         # stage теперь только для логирования, clamp по единым границам CSV
         adjusted = self.rules.adjust_ai_params(ai_params)
-        print(f"[Controller] Adjusted params: {adjusted}")
 
         await self._apply_params(adjusted, state)
 
@@ -69,7 +57,7 @@ class Controller:
         return adjusted
 
     async def _apply_params(self, params: PlantParms, state: GreenhouseState) -> None:
-        log(f"{Fore.GREEN}[Controller -> Yieldizer]{Fore.RESET}")
+        log(f"\n{Fore.GREEN}[Controller -> Yieldizer]{Fore.RESET}")
         # Световой день
         light_begin = 25200
         light_end = light_begin + int(params.get("light_duration", 16)) * 3600
@@ -86,7 +74,7 @@ class Controller:
         _bar[light_end // _bar_scl - 1] += Fore.LIGHTBLACK_EX
 
         print(
-            f"Цикл:  {Fore.LIGHTBLACK_EX}{''.join(_bar)} {Fore.RESET}{state.time // 60 // 60}:{state.time // 60 % 60}"
+            f"Цикл:  {Fore.LIGHTBLACK_EX}{''.join(_bar)} {Fore.RESET}{state.time // 3600:02}:{state.time // 60 % 60:02}"
         )
 
         try:
@@ -216,29 +204,13 @@ class Controller:
         except Exception:
             traceback.print_exc()
 
-        #     if param_name not in YIELDIZER_PARAM_MAP:
-        #         # light_duration не в MAP — это нормально, уже обработан выше
-        #         if param_name != "light_duration":
-        #             print(f"[Controller] Unknown param '{param_name}', skipping")
-        #         continue
-        #
-        #     ns, key = YIELDIZER_PARAM_MAP[param_name]
-        #     try:
-        #         success = await set_parameter(ns, key, value)
-        #         if success:
-        #             print(f"[Controller] Set {ns}/{key} = {value} ✓")
-        #         else:
-        #             print(f"[Controller] Failed to set {ns}/{key} = {value}")
-        #     except Exception as e:
-        #         print(f"[Controller] Error setting {ns}/{key}: {e}")
-
     @staticmethod
     def _clamp_light(val: float) -> float:
         """light_duration: от 12 до 18 часов."""
         return max(12.0, min(18.0, float(val)))
 
-    def get_last_params(self) -> Optional[dict]:
+    def get_last_params(self):
         return self._last_params
 
-    def get_last_stage(self) -> Optional[str]:
+    def get_last_stage(self):
         return self._last_stage

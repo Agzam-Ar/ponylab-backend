@@ -1,9 +1,9 @@
 import os
-from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urlparse
 
 import httpx
+from pydantic import BaseModel
 
 from data.models import Clim, Config, Env, Timer
 
@@ -27,8 +27,7 @@ def _get_urls(base_url: str) -> list[str]:
 URLS = _get_urls(BASE_URL)
 
 
-@dataclass
-class SensorValues:
+class SensorValues(BaseModel):
     ph: float
     ec: float
     temp_solution: float
@@ -39,14 +38,13 @@ class SensorValues:
     light: float
 
 
-@dataclass
-class GreenhouseState:
+class GreenhouseState(BaseModel):
     values: SensorValues
     description: str
     uptime: int
     time: int
     wifi: int
-    errors: list
+    errors: list[str]
 
 
 async def fetch_state() -> GreenhouseState:

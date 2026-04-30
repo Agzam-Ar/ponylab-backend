@@ -10,7 +10,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Response
-from fastapi.responses import StreamingResponse
 
 from ai.analyze import analyze
 from camera.capture import Camera
@@ -141,9 +140,9 @@ async def analysis():
     return server.get_analysis()
 
 
-@app.post("/api/command")
-async def command(cmd: dict):
-    return await send_command(cmd)
+# @app.post("/api/command")
+# async def command(cmd: dict):
+#     return await send_command(cmd)
 
 
 if __name__ == "__main__":

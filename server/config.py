@@ -1,5 +1,5 @@
-from logic import rules
+from logic.rules import PlantRules
 
 
 class Config:
-    rules = rules.PlantRules()
+    rules: PlantRules = PlantRules()

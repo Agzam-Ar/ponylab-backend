@@ -96,4 +96,4 @@ class PlantRules:
 
 @dataclass
 class Rules:
-    tomato = PlantRules("tomato")
+    tomato: PlantRules = PlantRules("tomato")

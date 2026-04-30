@@ -1,5 +1,7 @@
 import json
 import base64
+import time
+from colorama import Fore
 import httpx
 import os
 from dataclasses import dataclass
@@ -30,11 +32,7 @@ SYSTEM_PROMPT = f"""Ты эксперт-агроном. Проанализиру
     "health": 0.0-1.0,
     "disease": "здоров/название болезни",
     {Config.rules.specification()},
-    "recommended_temp": 20-30,
-    "recommended_humidity": 40-80,
-    "recommended_ec": 1.0-3.0,
-    "recommended_ph": 5.5-6.5,
-    "light_duration": 12-18
+    "rationale": "объяснение, почему выбраны именно эти цифры (кратко)"
 }}
 """
 
@@ -45,9 +43,14 @@ def encode_image(image_bytes: bytes) -> str:
     return base64.b64encode(image_bytes).decode("utf-8")
 
 
+def log(*values: object):
+    print(*values)
+
+
 def analyze(image_bytes: bytes, state: GreenhouseState) -> AnalysisResult:
+    log(f"\n{Fore.LIGHTBLUE_EX}[Image -> LLM]{Fore.RESET}")
     if SKIP_AI:
-        print("[analyze] Warning: AI skip")
+        log(f"{Fore.LIGHTYELLOW_EX}Skipped with default values{Fore.RESET}")
         recommended_parms: PlantParms = {}
         for parm, rule in Config.rules.iter():
             if rule.value is not None:
@@ -59,16 +62,16 @@ def analyze(image_bytes: bytes, state: GreenhouseState) -> AnalysisResult:
             disease="Здоров",
             recommended_params=recommended_parms,
         )
-    print(f"Prompt to {LLM_BASE_URL}")
+
+    log(f"Сервер llm: {Fore.LIGHTCYAN_EX}{LLM_BASE_URL}{Fore.RESET}")
     client = OpenAI(
-        base_url=LLM_BASE_URL, api_key=LLM_API_KEY, timeout=httpx.Timeout(120000.0)
+        base_url=LLM_BASE_URL, api_key=LLM_API_KEY, timeout=httpx.Timeout(None)
     )
 
     b64 = encode_image(image_bytes)
-    user_prompt = (
-        f"""Данные датчиков: {json.dumps(state)}\nПроанализируй растение на фото."""
-    )
-    print(f"Prompt: {user_prompt}")
+    user_prompt = f"""Данные датчиков: {state.model_dump_json()}\nПроанализируй растение на фото."""
+    log(f"=== Промпт ===\n{Fore.WHITE}{user_prompt}{Fore.RESET}\n===")
+    _start = time.perf_counter()
     response = client.chat.completions.create(
         model="local-model",
         messages=[
@@ -87,20 +90,24 @@ def analyze(image_bytes: bytes, state: GreenhouseState) -> AnalysisResult:
         response_format={"type": "json_object"},
         temperature=0,
     )
-    print("response ready!")
+    log(
+        f"{Fore.LIGHTGREEN_EX}Response ready!{Fore.RESET} ({int(time.perf_counter() - _start)}s)"
+    )
     try:
-        print(f"{response.choices}")
-        data = json.loads(response.choices[0].message.content or "")
-        print(f"Result: {data}")
+        data = json.loads(response.choices[0].message.content or "")  # pyright: ignore[reportAny]
+        log(
+            f"=== Данные ===\n{Fore.LIGHTGREEN_EX}{json.dumps(data, indent=4, ensure_ascii=False)}{Fore.RESET}\n==="
+        )
         parms: PlantParms = {}
         for parm, rule in Config.rules.iter():
-            ai_parm = auto_type(f"{data.get(f'recommended_{parm}', rule.value)}")
+            ai_parm = auto_type(data.get(f"recommended_{parm}", rule.value))  # pyright: ignore[reportAny]
             if ai_parm is not None:
                 parms[parm] = ai_parm
+
         return AnalysisResult(
-            growth_stage=data.get("growth_stage", "Не определено"),
-            health=float(data.get("health", 0.5)),
-            disease=data.get("disease", "healthy"),
+            growth_stage=str(data.get("growth_stage", "Не определено")),  # pyright: ignore[reportAny]
+            health=float(data.get("health", 0.5)),  # pyright: ignore[reportAny]
+            disease=data.get("disease", "healthy"),  # pyright: ignore[reportAny]
             recommended_params=parms,
         )
     except Exception as e:
