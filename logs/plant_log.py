@@ -64,6 +64,9 @@ class PlantLog:
     # def get_history(self, limit: int = 100) -> list:
     #     events = self._load()
     #     return events[-limit:]
+    def results_str(self):
+        return [r.rationale for r in self.results]
+
     def last_result(self):
         if len(self.results) == 0:
             return None

@@ -101,6 +101,9 @@ class GreenhouseServer:
             #     "last_error": str(e),
             # }
 
+    def get_logs(self):
+        return self.plant_log.results_str()
+
     def get_analysis(self):
         return self._analysis_cache
 
@@ -148,6 +151,11 @@ async def image():
 @app.get("/api/analysis")
 async def analysis():
     return server.get_analysis()
+
+
+@app.get("/api/logs")
+async def logs_api():
+    return server.get_logs()
 
 
 # @app.post("/api/command")
