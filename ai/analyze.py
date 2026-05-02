@@ -25,6 +25,7 @@ class AnalysisResult:
     disease: str
     recommended_params: PlantParms
     rationale: str
+    action_summary: str
 
 
 def encode_image(image_bytes: bytes) -> str:
@@ -42,7 +43,9 @@ def calculate_vpd(temp: float, humidity: float):
 
 
 def analyze(image_bytes: bytes, state: GreenhouseState) -> AnalysisResult:
-    from server.config import Config
+    import server.config
+
+    Config = server.config.Config
 
     log(f"\n{Fore.LIGHTBLUE_EX}[Image -> LLM]{Fore.RESET}")
 
@@ -53,7 +56,8 @@ def analyze(image_bytes: bytes, state: GreenhouseState) -> AnalysisResult:
         "health": 0.0-1.0,
         "disease": "здоров/название болезни",
         {Config.rules.specification()},
-        "rationale": "объяснение-план для себя, почему выбраны именно эти цифры (кратко)"
+        "rationale": "объяснение-план для себя, почему выбраны именно эти цифры (кратко)",
+        "action_summary": "очень краткое описание примененных тобой действий"
     }}
     """
 
@@ -91,14 +95,17 @@ def analyze(image_bytes: bytes, state: GreenhouseState) -> AnalysisResult:
     - Ошибки: {state.errors}  
 
     Предыдущая тактика:
-    - Твое решение: {json.dumps(last_result.recommended_params, ensure_ascii=False) if last_result is not None else "<нет>"}
-    - Твое обоснование: {last_result.rationale if last_result is not None else "<нет>"}.
+    - Твое решение: {json.dumps(last_result.result.recommended_params, ensure_ascii=False) if last_result is not None else "<нет>"}
+    - Твое обоснование: {last_result.result.rationale if last_result is not None else "<нет>"}.
+
+    Пиши Rationale строго по делу - то что хочочешь не забыть при следующих анализах, тренд парамтров
 
     Задание
     - Проанализируй фото растения на предмет болезней и стадии роста
     - Если скоро рассвет/закат — подготовь климат заранее
     - Сравни текущие дельты с твоими прошлыми установками
     - Выдай обновленные параметры в JSON
+    - Обязательно упомяни значения дельт (Δ) и объясни, почему ты меняешь или оставляешь текущие цели
     """
 
     if SKIP_AI:
@@ -114,6 +121,7 @@ def analyze(image_bytes: bytes, state: GreenhouseState) -> AnalysisResult:
             disease="Здоров",
             recommended_params=recommended_parms,
             rationale="Включи ИИ",
+            action_summary="нет",
         )
 
     log(f"Сервер llm: {Fore.LIGHTCYAN_EX}{LLM_BASE_URL}{Fore.RESET}")
@@ -164,6 +172,7 @@ def analyze(image_bytes: bytes, state: GreenhouseState) -> AnalysisResult:
             disease=data.get("disease", "healthy"),  # pyright: ignore[reportAny]
             recommended_params=parms,
             rationale=data.get("rationale", ""),  # pyright: ignore[reportAny]
+            action_summary=data.get("action_summary", ""),  # pyright: ignore[reportAny]
         )
     except Exception as e:
         print(f"An error occurred: {e}")

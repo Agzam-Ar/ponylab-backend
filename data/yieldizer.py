@@ -50,9 +50,9 @@ class GreenhouseState(BaseModel):
 
 async def fetch_state() -> GreenhouseState:
 
-    def fetch_value(values: Any, index: int, default: str | float):
+    def fetch_value(values: list[Any], index: int, default: str | float):  # pyright: ignore[reportExplicitAny]
         if index < len(values) and "v" in values[index]:
-            return values[index]["v"]
+            return values[index]["v"]  # pyright: ignore[reportAny]
         return default
 
     async with httpx.AsyncClient(timeout=10.0) as client:
@@ -64,24 +64,24 @@ async def fetch_state() -> GreenhouseState:
                 except Exception:
                     continue
                 if resp.status_code == 200:
-                    data = resp.json()
-                    v = data.get("values", [])
+                    data = resp.json()  # pyright: ignore[reportAny]
+                    v = data.get("values", [])  # pyright: ignore[reportAny]
                     state = GreenhouseState(
                         values=SensorValues(
-                            ph=float(fetch_value(v, 0, 0.0)),
-                            ec=float(fetch_value(v, 1, 0.0)),
-                            temp_solution=float(fetch_value(v, 2, 0.0)),
-                            level=str(fetch_value(v, 3, "none")),
-                            temp_air=float(fetch_value(v, 4, 0.0)),
-                            humidity_air=v[5]["v"] if len(v) > 5 else 0.0,
-                            co2=int(fetch_value(v, 5, 0)),
-                            light=float(fetch_value(v, 6, 0.0)),
+                            ph=float(fetch_value(v, 0, 0.0)),  # pyright: ignore[reportAny]
+                            ec=float(fetch_value(v, 1, 0.0)),  # pyright: ignore[reportAny]
+                            temp_solution=float(fetch_value(v, 2, 0.0)),  # pyright: ignore[reportAny]
+                            level=str(fetch_value(v, 3, "none")),  # pyright: ignore[reportAny]
+                            temp_air=float(fetch_value(v, 4, 0.0)),  # pyright: ignore[reportAny]
+                            humidity_air=v[5]["v"] if len(v) > 5 else 0.0,  # pyright: ignore[reportAny]
+                            co2=int(fetch_value(v, 5, 0)),  # pyright: ignore[reportAny]
+                            light=float(fetch_value(v, 6, 0.0)),  # pyright: ignore[reportAny]
                         ),
-                        description=data.get("description", ""),
-                        uptime=data.get("uptime", 0),
-                        time=data.get("time", 0),
-                        wifi=data.get("wifi", 0),
-                        errors=data.get("errors", []),
+                        description=data.get("description", ""),  # pyright: ignore[reportAny]
+                        uptime=data.get("uptime", 0),  # pyright: ignore[reportAny]
+                        time=data.get("time", 0),  # pyright: ignore[reportAny]
+                        wifi=data.get("wifi", 0),  # pyright: ignore[reportAny]
+                        errors=data.get("errors", []),  # pyright: ignore[reportAny]
                     )
                     return state
                 else:
@@ -89,16 +89,16 @@ async def fetch_state() -> GreenhouseState:
     # raise ConnectionError(f"Cannot reach Yieldizer at {BASE_URL}")
     return GreenhouseState(
         values=SensorValues(
-            ph=0,
-            ec=0.5,
+            ph=6,
+            ec=1,
             temp_solution=1,
             level="meow",
             temp_air=25,
-            humidity_air=10,
+            humidity_air=50,
             co2=2,
             light=10,
         ),
-        description=" I use arch, BTW ",
+        description="",
         uptime=123,
         time=int(time.time() * 180) % (86400),  # 1 минута = 3 часа
         wifi=1,
@@ -153,11 +153,3 @@ async def send_command(command: dict) -> bool:
                     print(f"Error: {e}")
                     continue
     return False
-
-
-async def set_parameter(ns: str, key: str, value) -> bool:
-    return await send_command({"type": "set", "ns": ns, "key": key, "value": value})
-
-
-async def set_climate(param: str, value: dict) -> bool:
-    return await send_command({"type": "set_climate", "param": param, **value})

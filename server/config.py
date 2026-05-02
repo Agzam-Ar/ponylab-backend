@@ -1,7 +1,7 @@
-from logic.rules import PlantRules
-from logs.plant_log import PlantLog
+import logs.plant_log
+import logic.rules
 
 
 class Config:
-    rules: PlantRules = PlantRules()
-    log: PlantLog = PlantLog()
+    rules: logic.rules.PlantRules = logic.rules.PlantRules()
+    log: logs.plant_log.PlantLog = logs.plant_log.PlantLog()

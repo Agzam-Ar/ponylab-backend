@@ -1,12 +1,11 @@
 import asyncio
+from asyncio.tasks import Task
 import os
 import sys
 from pathlib import Path
 import traceback
+from typing import Never
 
-from openai.resources.realtime.realtime import log
-
-from server.config import Config
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -16,7 +15,7 @@ from fastapi import FastAPI, Response
 
 from ai.analyze import AnalysisResult, analyze
 from camera.capture import Camera
-from data.yieldizer import fetch_state, send_command, set_parameter
+from data.yieldizer import fetch_state
 from logic.control import Controller
 from logs.plant_log import PlantLog
 
@@ -28,19 +27,20 @@ class GreenhouseServer:
     camera: Camera
     controller: Controller
     plant_log: PlantLog
+    _loop_task: Task[Never] | None = None
 
     def __init__(self):
         self.camera = Camera()
 
+        from server.config import Config
+
         self.controller = Controller(Config.rules)
         self.plant_log = Config.log
-        self._state_cache = {}
         self._analysis_cache: AnalysisResult | None = None
-        self._loop_task = None
 
     async def get_sensors(self):
         state = await fetch_state()
-        self._state_cache = {
+        return {
             "ph": state.values.ph,
             "ec": state.values.ec,
             "temp_solution": state.values.temp_solution,
@@ -54,7 +54,6 @@ class GreenhouseServer:
             "description": state.description,
             "errors": state.errors,
         }
-        return self._state_cache
 
     def get_image(self):
         return self.camera.get_stream()
@@ -70,36 +69,17 @@ class GreenhouseServer:
             state = await fetch_state()
             self.plant_log.state_snapshot(state)
 
-            # state = await self.get_sensors()
-
             result = await asyncio.to_thread(analyze, image, state)
             self.plant_log.analysis_snapshot(result)
 
             # LOGIC модуль: корректирует и отправляет параметры в теплицу
-            adjusted = await self.controller.process(result, state)
+            _ = await self.controller.process(result, state)
 
             self._analysis_cache = result
-            # self._analysis_cache = {
-            #     "stage": result.growth_stage,
-            #     "health": result.health,
-            #     "disease": result.disease,
-            #     "params": adjusted,
-            # }
-
-            # Логируем анализ
-            # self.plant_log.log_ai_analysis(result)
-
         except Exception as e:
             print(f"[Server] Analysis error: {e}")
             traceback.print_exc()
             self._analysis_cache = None
-            # {
-            #     "stage": "unknown",
-            #     "health": 0.5,
-            #     "disease": "unavailable",
-            #     "params": {},
-            #     "last_error": str(e),
-            # }
 
     def get_logs(self):
         return self.plant_log.results_str()
@@ -120,15 +100,15 @@ class GreenhouseServer:
         self._loop_task = asyncio.create_task(self._run_loop())
 
     def stop_loop(self):
-        if self._loop_task:
-            self._loop_task.cancel()
+        if self._loop_task is not None:
+            _ = self._loop_task.cancel()
 
 
 server = GreenhouseServer()
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI):
     server.start_loop()
     yield
     server.stop_loop()
@@ -156,11 +136,6 @@ async def analysis():
 @app.get("/api/logs")
 async def logs_api():
     return server.get_logs()
-
-
-# @app.post("/api/command")
-# async def command(cmd: dict):
-#     return await send_command(cmd)
 
 
 if __name__ == "__main__":
