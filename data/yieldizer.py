@@ -1,11 +1,12 @@
 import os
+import time
 from typing import Any
 from urllib.parse import urlparse
 
 import httpx
 from pydantic import BaseModel
 
-from data.models import Clim, Config, Env, Timer
+from data.models import Clim, Config, Env, NSolution, Timer
 
 BASE_URL = os.getenv("YIELDIZER_URL", "http://127.0.0.1:3001")
 
@@ -99,9 +100,15 @@ async def fetch_state() -> GreenhouseState:
         ),
         description=" I use arch, BTW ",
         uptime=123,
-        time=0,
+        time=int(time.time() * 180) % (86400),  # 1 минута = 3 часа
         wifi=1,
         errors=[],
+    )
+
+
+async def send_nsolution(nsolution: NSolution):
+    return await post(
+        "/cfg", Config(nsolution=nsolution).model_dump_json(exclude_none=True)
     )
 
 

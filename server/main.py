@@ -2,6 +2,9 @@ import asyncio
 import os
 import sys
 from pathlib import Path
+import traceback
+
+from openai.resources.realtime.realtime import log
 
 from server.config import Config
 
@@ -11,7 +14,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Response
 
-from ai.analyze import analyze
+from ai.analyze import AnalysisResult, analyze
 from camera.capture import Camera
 from data.yieldizer import fetch_state, send_command, set_parameter
 from logic.control import Controller
@@ -30,9 +33,9 @@ class GreenhouseServer:
         self.camera = Camera()
 
         self.controller = Controller(Config.rules)
-        self.plant_log = PlantLog("plant1")
+        self.plant_log = Config.log
         self._state_cache = {}
-        self._analysis_cache = {}
+        self._analysis_cache: AnalysisResult | None = None
         self._loop_task = None
 
     async def get_sensors(self):
@@ -59,37 +62,44 @@ class GreenhouseServer:
     async def _update_analysis(self):
         image = self.camera.get_stream()
         if not image:
-            self._analysis_cache = {"error": "No image available"}
+            self._analysis_cache = None
+            # {"error": "No image available"}
             return
 
         try:
             state = await fetch_state()
+            self.plant_log.state_snapshot(state)
+
             # state = await self.get_sensors()
 
             result = await asyncio.to_thread(analyze, image, state)
+            self.plant_log.analysis_snapshot(result)
 
             # LOGIC модуль: корректирует и отправляет параметры в теплицу
             adjusted = await self.controller.process(result, state)
 
-            self._analysis_cache = {
-                "stage": result.growth_stage,
-                "health": result.health,
-                "disease": result.disease,
-                "params": adjusted,
-            }
+            self._analysis_cache = result
+            # self._analysis_cache = {
+            #     "stage": result.growth_stage,
+            #     "health": result.health,
+            #     "disease": result.disease,
+            #     "params": adjusted,
+            # }
 
             # Логируем анализ
-            self.plant_log.log_ai_analysis(result)
+            # self.plant_log.log_ai_analysis(result)
 
         except Exception as e:
             print(f"[Server] Analysis error: {e}")
-            self._analysis_cache = {
-                "stage": "unknown",
-                "health": 0.5,
-                "disease": "unavailable",
-                "params": {},
-                "last_error": str(e),
-            }
+            traceback.print_exc()
+            self._analysis_cache = None
+            # {
+            #     "stage": "unknown",
+            #     "health": 0.5,
+            #     "disease": "unavailable",
+            #     "params": {},
+            #     "last_error": str(e),
+            # }
 
     def get_analysis(self):
         return self._analysis_cache

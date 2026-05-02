@@ -3,10 +3,11 @@ from pathlib import Path
 from colorama import Fore
 
 from ai.analyze import AnalysisResult
-from data.models import Clim, ClimateControl, TableItem, Timer, TimerData
+from data.models import Clim, ClimateControl, NSolution, TableItem, Timer, TimerData
 from data.yieldizer import (
     GreenhouseState,
     send_climate,
+    send_nsolution,
     send_timers,
 )
 from logic.rules import PlantParms, PlantRules
@@ -60,7 +61,9 @@ class Controller:
         log(f"\n{Fore.GREEN}[Controller -> Yieldizer]{Fore.RESET}")
         # Световой день
         light_begin = 25200
-        light_end = light_begin + int(params.get("light_duration", 16)) * 3600
+        light_end = min(
+            86400, light_begin + int(params.get("light_duration", 16)) * 3600
+        )
         is_day = light_begin <= state.time <= light_end
 
         # Отладочный timeline
@@ -70,6 +73,11 @@ class Controller:
         _bar[state.time // _bar_scl] = (
             Fore.LIGHTYELLOW_EX if is_day else Fore.LIGHTBLACK_EX
         ) + "⬤"
+
+        print(f"{light_begin} <= {state.time} <= {light_end}")
+        print(light_begin // _bar_scl - 1)
+        print(light_end // _bar_scl - 1)
+
         _bar[light_begin // _bar_scl - 1] += Fore.LIGHTYELLOW_EX
         _bar[light_end // _bar_scl - 1] += Fore.LIGHTBLACK_EX
 
@@ -199,6 +207,39 @@ class Controller:
                         t_on_max=10,
                         t_pause=3,
                     ),
+                )
+            )
+        except Exception:
+            traceback.print_exc()
+
+        try:
+            ph = int(params.get("ph", 7))
+            ec = int(params.get("ec", 7))
+
+            _ = await send_nsolution(
+                NSolution(
+                    mixing_time_min=0,
+                    ph_down_trig=ph,
+                    pump_ph_down_quant_s=0,
+                    ph_up_trig=0,
+                    pump_ph_up_quant_s=0,
+                    ec_down_trig_msm=ec,
+                    pump_ec_down_quant_s=0,
+                    ec_up_trig_msm=0,
+                    pump_ec_up_quant_s=0,
+                    b_koeff=0,
+                    c_koeff=0,
+                    pump_water_lvl_quant_s=0,
+                    lvl_ignore_time_min=0,
+                    lvl_run_delay_min=0,
+                    lvl_off_delay_min=0,
+                    temp_ctrl_on_temp=0,
+                    temp_ctrl_off_temp=0,
+                    temp_ctrl_time_on_above_min=0,
+                    temp_ctrl_time_on_below_min=0,
+                    temp_ctrl_time_off_above_min=0,
+                    ph_protection_delta=0,
+                    ec_protection_percent=0,
                 )
             )
         except Exception:
