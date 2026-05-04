@@ -1,4 +1,5 @@
 import os
+import random
 import time
 from typing import Any
 from urllib.parse import urlparse
@@ -35,7 +36,7 @@ class SensorValues(BaseModel):
     level: str
     temp_air: float
     humidity_air: float
-    co2: int
+    co2: float
     light: float
 
 
@@ -73,8 +74,8 @@ async def fetch_state() -> GreenhouseState:
                             temp_solution=float(fetch_value(v, 2, 0.0)),  # pyright: ignore[reportAny]
                             level=str(fetch_value(v, 3, "none")),  # pyright: ignore[reportAny]
                             temp_air=float(fetch_value(v, 4, 0.0)),  # pyright: ignore[reportAny]
-                            humidity_air=v[5]["v"] if len(v) > 5 else 0.0,  # pyright: ignore[reportAny]
-                            co2=int(fetch_value(v, 5, 0)),  # pyright: ignore[reportAny]
+                            humidity_air=float(fetch_value(v, 5, 0.0)),  # pyright: ignore[reportAny]
+                            co2=float(fetch_value(v, 5, 0.0)),  # pyright: ignore[reportAny]
                             light=float(fetch_value(v, 6, 0.0)),  # pyright: ignore[reportAny]
                         ),
                         description=data.get("description", ""),  # pyright: ignore[reportAny]
@@ -89,14 +90,14 @@ async def fetch_state() -> GreenhouseState:
     # raise ConnectionError(f"Cannot reach Yieldizer at {BASE_URL}")
     return GreenhouseState(
         values=SensorValues(
-            ph=6,
-            ec=1,
-            temp_solution=1,
-            level="meow",
-            temp_air=25,
-            humidity_air=50,
-            co2=2,
-            light=10,
+            ph=6 + random.random(),
+            ec=0,
+            temp_solution=25 + random.random(),
+            level="1",
+            temp_air=15 + random.random() * 15,
+            humidity_air=50 + random.random() * 30,
+            co2=500,
+            light=1000,
         ),
         description="",
         uptime=123,
@@ -136,20 +137,4 @@ async def post(path: str, body: str) -> bool:
             except Exception as e:
                 print(f"Error: {e}")
                 continue
-    return False
-
-
-async def send_command(command: dict) -> bool:
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        for base in URLS:
-            for path in ["/cmd", "/api/cmd"]:
-                try:
-                    url = f"{base}{path}" if base.endswith("/") else f"{base}{path}"
-                    print(f"POST on {url} with {command}")
-                    resp = await client.post(url, json=command)
-                    if resp.status_code == 200:
-                        return resp.text == "ok"
-                except Exception as e:
-                    print(f"Error: {e}")
-                    continue
     return False
