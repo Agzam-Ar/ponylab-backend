@@ -75,8 +75,8 @@ async def fetch_state() -> GreenhouseState:
                             level=str(fetch_value(v, 3, "none")),  # pyright: ignore[reportAny]
                             temp_air=float(fetch_value(v, 4, 0.0)),  # pyright: ignore[reportAny]
                             humidity_air=float(fetch_value(v, 5, 0.0)),  # pyright: ignore[reportAny]
-                            co2=float(fetch_value(v, 5, 0.0)),  # pyright: ignore[reportAny]
-                            light=float(fetch_value(v, 6, 0.0)),  # pyright: ignore[reportAny]
+                            co2=float(fetch_value(v, 6, 0.0)),  # pyright: ignore[reportAny]
+                            light=float(fetch_value(v, 7, 0.0)),  # pyright: ignore[reportAny]
                         ),
                         description=data.get("description", ""),  # pyright: ignore[reportAny]
                         uptime=data.get("uptime", 0),  # pyright: ignore[reportAny]

@@ -114,7 +114,12 @@ class Controller:
                             dbegin=0,
                             dskip=0,
                             table=[
-                                TableItem(t1=light_begin, t2=light_end - light_begin)
+                                # Какие то нехорошие люди перепутали в теплице
+                                # включение света с выключением, поэтому вместо
+                                # TableItem(t1=light_begin, t2=light_end - light_begin)
+                                # приходится ставить промежуток [0;начало],[конец,86400]
+                                TableItem(t1=0, t2=light_begin),
+                                TableItem(t1=light_end, t2=86400 - light_end),
                             ],
                         ),
                     ),
