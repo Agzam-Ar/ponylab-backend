@@ -74,10 +74,6 @@ class Controller:
             Fore.LIGHTYELLOW_EX if is_day else Fore.LIGHTBLACK_EX
         ) + "⬤"
 
-        print(f"{light_begin} <= {state.time} <= {light_end}")
-        print(light_begin // _bar_scl - 1)
-        print(light_end // _bar_scl - 1)
-
         _bar[light_begin // _bar_scl - 1] += Fore.LIGHTYELLOW_EX
         _bar[light_end // _bar_scl - 1] += Fore.LIGHTBLACK_EX
 
@@ -153,10 +149,16 @@ class Controller:
             co2_target = int(params.get("co2_target", 1200)) if is_day else 0
             co2_margin = 100
 
+            log("\nКлимат:")
             log(
-                f"Температура: {Fore.LIGHTGREEN_EX}{temp_target}°C{Fore.RESET}\nВлажность: {Fore.LIGHTGREEN_EX}{humidity_target}%{Fore.RESET}\nCO2: {Fore.LIGHTGREEN_EX}{co2_target} ppm{Fore.RESET}"
+                f"{Fore.LIGHTBLACK_EX}├─{Fore.RESET} Температура: {Fore.LIGHTGREEN_EX}{temp_target}°C{Fore.RESET}"
             )
-
+            log(
+                f"{Fore.LIGHTBLACK_EX}├─{Fore.RESET} Влажность:   {Fore.LIGHTGREEN_EX}{humidity_target}%{Fore.RESET}"
+            )
+            log(
+                f"{Fore.LIGHTBLACK_EX}└─{Fore.RESET} CO2:         {Fore.LIGHTGREEN_EX}{co2_target} ppm{Fore.RESET}"
+            )
             _ = await send_climate(
                 Clim(
                     air_cooler=ClimateControl(
@@ -218,33 +220,48 @@ class Controller:
             traceback.print_exc()
 
         try:
-            ph = int(params.get("ph", 7))
-            ec = int(params.get("ec", 7))
+            ph = float(params.get("ph", 7.0))
+            ec = float(params.get("ec", 1.5))
+            b_koeff = float(params.get("b_koeff", 1.01))
+
+            ph_margin = 0.3
+            ec_margin = 0.1
+
+            log("\nРаствор:")
+            log(
+                f"{Fore.LIGHTBLACK_EX}├─ {Fore.RESET}PH:  {Fore.LIGHTBLUE_EX}{ph:.2f}{Fore.RESET}"
+            )
+            log(
+                f"{Fore.LIGHTBLACK_EX}├─ {Fore.RESET}EC:  {Fore.LIGHTBLUE_EX}{ec:.2f}{Fore.RESET}"
+            )
+            log(
+                f"{Fore.LIGHTBLACK_EX}└─ {Fore.RESET}A:B: {Fore.LIGHTBLUE_EX}{b_koeff:.2f}{Fore.RESET}"
+            )
 
             _ = await send_nsolution(
                 NSolution(
                     mixing_time_min=0,
-                    ph_down_trig=ph,
-                    pump_ph_down_quant_s=0,
-                    ph_up_trig=0,
-                    pump_ph_up_quant_s=0,
-                    ec_down_trig_msm=ec,
-                    pump_ec_down_quant_s=0,
-                    ec_up_trig_msm=0,
-                    pump_ec_up_quant_s=0,
-                    b_koeff=0,
+                    ph_down_trig=ph + ph_margin,
+                    pump_ph_down_quant_s=0.5,
+                    ph_up_trig=ph - ph_margin,
+                    pump_ph_up_quant_s=0.5,
+                    ec_down_trig_msm=ec + ec_margin,
+                    pump_ec_down_quant_s=10,
+                    ec_up_trig_msm=ec - ec_margin,
+                    pump_ec_up_quant_s=10,
+                    b_koeff=b_koeff,
                     c_koeff=0,
-                    pump_water_lvl_quant_s=0,
-                    lvl_ignore_time_min=0,
+                    pump_water_lvl_quant_s=10,
+                    lvl_ignore_time_min=1,
                     lvl_run_delay_min=0,
                     lvl_off_delay_min=0,
-                    temp_ctrl_on_temp=0,
-                    temp_ctrl_off_temp=0,
-                    temp_ctrl_time_on_above_min=0,
-                    temp_ctrl_time_on_below_min=0,
-                    temp_ctrl_time_off_above_min=0,
-                    ph_protection_delta=0,
-                    ec_protection_percent=0,
+                    temp_ctrl_on_temp=21,
+                    temp_ctrl_off_temp=19,
+                    temp_ctrl_time_on_above_min=3,
+                    temp_ctrl_time_on_below_min=10,
+                    temp_ctrl_time_off_above_min=5,
+                    ph_protection_delta=0.4,
+                    ec_protection_percent=15,
                 )
             )
         except Exception:

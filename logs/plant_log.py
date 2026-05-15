@@ -1,4 +1,5 @@
 from __future__ import annotations
+from datetime import datetime
 from pathlib import Path
 import time
 
@@ -32,7 +33,7 @@ class PlantLog:
 
     def results_str(self):
         return [
-            f"[{r.timestamp % 86400 // 3600:02d}:{r.timestamp % 3600 // 60:02d}] {r.result.action_summary}"
+            f"[{time.strftime('%H:%M', time.localtime(r.timestamp))}] {r.result.action_summary}"
             for r in self.results[-7:]
         ]
 
