@@ -1,8 +1,10 @@
 import asyncio
 from contextlib import asynccontextmanager
 from enum import Enum
+from operator import index
 import os
-from typing import Callable
+import time
+from typing import Callable, override
 
 from fastapi import APIRouter, Form, HTTPException
 from fastapi.responses import HTMLResponse, PlainTextResponse
@@ -27,32 +29,102 @@ FALLBACK_FILE = os.getenv("FALLBACK_FILE", "server/yieldizer.html")
 SPEED_SCALE = 1
 
 
-class ClimateController(BaseModel):
+class FuncController(BaseModel):
+    index: int
+    name: str = "неизвестно"
+
+    delta: dict[Sensors, float] = {}
+
+    def step(self, config: Config, state: State, out: int):
+        if state.outs.sum_on_s[out] > 0:  # Если включен
+            self.apply(state)
+
+    def set_sum(self, state: State, out: int, sec: float):
+        state.outs.sum_on_s[out] = sec
+
+    def set_countdown(self, state: State, out: int, sec: float):
+        if config.outsfn:
+            state.outs.func_cntdn_s[config.outsfn[out]] = sec
+
+    def set_time(self, state: State, out: int, sec: float):
+        self.set_sum(state, out, sec)
+        self.set_countdown(state, out, sec)
+
+    def set_desc(self, state: State, sec: float):
+        s = int(abs(sec))
+        state.description += f"{self.name} {'вкл' if sec > 0 else 'выкл'} [{(s // 60):02d}:{(s % 60):02d}]<br>"
+        pass
+
+    def apply(self, state: State):
+        # if isinstance(self.delta, float):
+        #     sv = state.values[self.sensor.value]
+        #     if sv.v:
+        #         sv.v += self.delta * 10
+        # if isinstance(self.delta, dict):
+        for sensor, d in self.delta.items():
+            sv = state.values[sensor.value]
+            if sv.v:
+                sv.v += d * 10
+
+
+class ClimateController(FuncController):
     """Enum для outsfn из Config"""
 
-    index: int
     control: Callable[[Clim], ClimateControl]
     sensor: Sensors
-    delta: float | dict[Sensors, float]
 
-    def step(self, clim: Clim, state: State, out: int):
-        c = self.control(clim)
-        value = self.sensor.from_state(state)
-        if c.under(value) and state.outs.sum_on_s[out] < 1:  # Под диапозоном - включаем
-            state.outs.sum_on_s[out] = c.t_on_min * 60
-            if config.outsfn:
-                state.outs.func_cntdn_s[config.outsfn[out]] = c.t_on_min * 60
+    @override
+    def step(self, config: Config, state: State, out: int):
+        if config.clim is not None:
+            c = self.control(config.clim)
+            value = self.sensor.from_state(state)
+            if (
+                c.under(value) and state.outs.sum_on_s[out] < 1
+            ):  # Под диапозоном - включаем
+                self.set_time(state, out, c.t_on_min * 60)
+                self.set_desc(state, c.t_on_min * 60)
+        super().step(config, state, out)
 
-        if state.outs.sum_on_s[out] > 0:  # Если включен
-            if isinstance(self.delta, float):
-                sv = state.values[self.sensor.value]
-                if sv.v:
-                    sv.v += self.delta * 10
-            if isinstance(self.delta, dict):
-                for sensor, d in self.delta.items():
-                    sv = state.values[sensor.value]
-                    if sv.v:
-                        sv.v += d * 10
+
+class TimersController(FuncController):
+    timer: int
+
+    _time: int = 0
+    _pause: int = 0
+
+    @override
+    def step(self, config: Config, state: State, out: int):
+        if config.env is not None:
+            t = config.env.timers[self.timer]
+            if t.m == 2:
+                if self._time > 0:
+                    self._time -= 1
+                    self.apply(state)
+                    self.set_time(state, out, self._time)
+                    self.set_desc(state, self._pause)
+                elif self._pause > 0:
+                    self._pause -= 1
+                    self.set_desc(state, -self._pause)
+                else:
+                    self._time = 0 if t.data.t1 is None else t.data.t1
+                    self._pause = 0 if t.data.t2 is None else t.data.t2
+            if t.m == 3 and t.data.table:
+                pause = 86400 - state.time
+                for item in t.data.table:
+                    if item.t1 < state.time < item.t2:
+                        self.apply(state)
+                        time = item.t2 - state.time
+                        self.set_time(state, out, time)
+                        self.set_desc(state, time)
+                        pause = 0
+                        break
+                    if state.time < item.t1:
+                        pause = min(pause, item.t1 - state.time)
+
+                if pause > 0:
+                    self.set_desc(state, -pause)
+
+        super().step(config, state, out)
 
 
 class OutFunc(Enum):
@@ -67,24 +139,27 @@ class OutFunc(Enum):
     CHILLER = 6  # чиллер
     AIR_CONDITIONER = ClimateController(
         index=7,
+        name="кондиционер",
         control=lambda c: c.air_cooler,
         sensor=Sensors.TEMP_AIR,
         delta={
             Sensors.TEMP_AIR: -0.04,  # кондиционер эффективно охлаждает
             Sensors.HUMIDITY_AIR: -0.01,  # кондиционер побочно сушит воздух
         },
-    )  # кондиционер
+    )
     DEHUMIDIFIER = ClimateController(
         index=8,
+        name="осушитель",
         control=lambda c: c.dehumidifier,
         sensor=Sensors.HUMIDITY_AIR,
         delta={
             Sensors.HUMIDITY_AIR: -0.04,  # осушает воздух (-2.4% в минуту)
             Sensors.TEMP_AIR: 0.008,  # побочный нагрев от компрессора
         },
-    )  # осушитель
+    )
     EXHAUST_FAN = ClimateController(
         index=9,
+        name="вытяжка",
         control=lambda c: (
             c.extractor_h
         ),  # управляется логикой вытяжки по влажности (или c.extractor_t)
@@ -94,31 +169,37 @@ class OutFunc(Enum):
             Sensors.TEMP_AIR: -0.05,  # выдувает тепло наружу
             Sensors.CO2: -2.0,  # быстро сбрасывает CO2 до уличных значений
         },
-    )  # вытяжка
+    )
     HUMIDIFIER = ClimateController(
         index=10,
+        name="увлажнитель",
         control=lambda c: c.humidifier,
         sensor=Sensors.HUMIDITY_AIR,
-        delta=0.04,  # увлажняет на +2.4% в минуту
-    )  # увлажнитель
-
+        delta={Sensors.HUMIDITY_AIR: 0.04},  # увлажняет на +2.4% в минуту
+    )
     HEATER = ClimateController(
         index=11,
+        name="обогреватель",
         control=lambda c: c.heater,
         sensor=Sensors.TEMP_AIR,
         delta={
             Sensors.TEMP_AIR: 0.02,  # нагрев воздуха на +1.2°C в минуту
             Sensors.HUMIDITY_AIR: -0.01,  # физическое падение относительной влажности при нагреве
         },
-    )  # обогреватель
+    )
     CO2_VALVE = ClimateController(
         index=12,
+        name="клапан СО2",
         control=lambda c: c.co2,
         sensor=Sensors.CO2,
-        delta=1.5,  # подача газа повышает уровень на +1.5 ppm в секунду
-    )  # клапан CO2
-    LIGHT = 13  # свет
-    WATERING = 14  # полив
+        delta={Sensors.CO2: 1.5},  # подача газа повышает уровень на +1.5 ppm в секунду
+    )
+    LIGHT = TimersController(
+        index=13, name="свет", timer=0, delta={Sensors.LIGHT: 5000}
+    )
+    WATERING = TimersController(
+        index=14, name="полив", timer=1, delta={Sensors.HUMIDITY_AIR: 0.1}
+    )
     TIMER_1 = 15  # таймер 1
     TIMER_2 = 16  # таймер 2
     TIMER_3 = 17  # таймер 3
@@ -128,14 +209,15 @@ class OutFunc(Enum):
     MIXING = 21  # перемеш-е
 
 
-OUT_FUNCS: list[None | ClimateController] = [None] * 256
+OUT_FUNCS: list[None | FuncController] = [None] * 256
 
 for item in OutFunc:
-    if isinstance(item.value, ClimateController):
+    if isinstance(item.value, FuncController):
         OUT_FUNCS[item.value.index] = item.value
 
 
 def step():
+    state.description = ""
     # Независимые параметры
     state.uptime += 1
     state.time = (state.time + 1) % 86400
@@ -151,11 +233,13 @@ def step():
         if state.outs.sum_on_s[index] > 0:
             state.outs.sum_on_s[index] -= 1
 
-        if config.clim and config.outsfn:
+        if config.outsfn:
             fid = config.outsfn[index]
             func = OUT_FUNCS[fid]
             if func:
-                func.step(config.clim, state, index)
+                func.step(config, state, index)
+
+    # Таймеры
 
 
 def apply_cfg(cfg: Config):
