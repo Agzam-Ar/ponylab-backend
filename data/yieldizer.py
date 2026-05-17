@@ -1,13 +1,11 @@
 import os
-import random
-import time
 from typing import Any
 from urllib.parse import urlparse
 
 import httpx
 from pydantic import BaseModel
 
-from data.models import Clim, Config, Env, NSolution, Timer
+from data.models import Clim, Config, Env, NSolution, State, Timer
 
 BASE_URL = os.getenv("YIELDIZER_URL", "http://127.0.0.1:3001")
 
@@ -56,6 +54,26 @@ async def fetch_state() -> GreenhouseState:
             return values[index]["v"]  # pyright: ignore[reportAny]
         return default
 
+    def from_api(_state: State):
+        v = _state.values
+        return GreenhouseState(
+            values=SensorValues(
+                ph=float(fetch_value(v, 0, 0.0)),
+                ec=float(fetch_value(v, 1, 0.0)),
+                temp_solution=float(fetch_value(v, 2, 0.0)),
+                level=str(fetch_value(v, 3, "none")),
+                temp_air=float(fetch_value(v, 4, 0.0)),
+                humidity_air=float(fetch_value(v, 5, 0.0)),
+                co2=float(fetch_value(v, 6, 0.0)),
+                light=float(fetch_value(v, 7, 0.0)),
+            ),
+            description=_state.description,
+            uptime=_state.uptime,
+            time=_state.time,
+            wifi=_state.wifi,
+            errors=_state.errors or [],
+        )
+
     async with httpx.AsyncClient(timeout=10.0) as client:
         for base in URLS:
             for path in ["/state"]:
@@ -65,46 +83,32 @@ async def fetch_state() -> GreenhouseState:
                 except Exception:
                     continue
                 if resp.status_code == 200:
-                    data = resp.json()  # pyright: ignore[reportAny]
-                    v = data.get("values", [])  # pyright: ignore[reportAny]
-                    state = GreenhouseState(
-                        values=SensorValues(
-                            ph=float(fetch_value(v, 0, 0.0)),  # pyright: ignore[reportAny]
-                            ec=float(fetch_value(v, 1, 0.0)),  # pyright: ignore[reportAny]
-                            temp_solution=float(fetch_value(v, 2, 0.0)),  # pyright: ignore[reportAny]
-                            level=str(fetch_value(v, 3, "none")),  # pyright: ignore[reportAny]
-                            temp_air=float(fetch_value(v, 4, 0.0)),  # pyright: ignore[reportAny]
-                            humidity_air=float(fetch_value(v, 5, 0.0)),  # pyright: ignore[reportAny]
-                            co2=float(fetch_value(v, 6, 0.0)),  # pyright: ignore[reportAny]
-                            light=float(fetch_value(v, 7, 0.0)),  # pyright: ignore[reportAny]
-                        ),
-                        description=data.get("description", ""),  # pyright: ignore[reportAny]
-                        uptime=data.get("uptime", 0),  # pyright: ignore[reportAny]
-                        time=data.get("time", 0),  # pyright: ignore[reportAny]
-                        wifi=data.get("wifi", 0),  # pyright: ignore[reportAny]
-                        errors=data.get("errors", []),  # pyright: ignore[reportAny]
-                    )
-                    return state
+                    _state = State.model_validate_json(resp.text)
+                    return from_api(_state)
                 else:
                     continue
     # raise ConnectionError(f"Cannot reach Yieldizer at {BASE_URL}")
-    return GreenhouseState(
-        values=SensorValues(
-            ph=6 + random.random(),
-            ec=0,
-            temp_solution=25 + random.random(),
-            level="1",
-            temp_air=15 + random.random() * 15,
-            humidity_air=50 + random.random() * 30,
-            co2=500,
-            light=1000,
-        ),
-        description="",
-        uptime=123,
-        time=int(time.time() * 180) % (86400),  # 1 минута = 3 часа
-        wifi=1,
-        errors=[],
-    )
+    from server.proxy import state
+
+    return from_api(state)
+
+
+async def get(url: str = "/", timeout: float = 1.0):
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        for base in URLS:
+            try:
+                return await client.get(f"{base}{url}")
+            except Exception:
+                continue
+
+
+async def page(timeout: float):
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        for base in URLS:
+            try:
+                return await client.get(f"{base}/")
+            except Exception:
+                continue
 
 
 async def send_nsolution(nsolution: NSolution):
@@ -136,5 +140,6 @@ async def post(path: str, body: str) -> bool:
                 print(f"Response: {resp.status_code} {resp.text}")
             except Exception as e:
                 print(f"Error: {e}")
+                # print(body)
                 continue
     return False

@@ -1,0 +1,1889 @@
+<!DOCTYPE html>
+<!-- saved from url=(0019)http://192.168.4.1/ -->
+<html lang="en-US"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style>
+    body {
+        text-align: center;
+        font-family: helvetica;
+    }
+
+    canvas {
+        border: 2px solid rgb(151, 149, 149);
+    }
+
+    table {
+        border: 1px solid black;
+        border-collapse: collapse;
+        padding: 10px;
+        text-align: left;
+        width: 100%;
+    }
+
+    thead,
+    tbody,
+    tfoot,
+    tr,
+    td,
+    th {
+        border: inherit;
+        border-collapse: inherit;
+        padding: inherit;
+        text-align: inherit;
+    }
+
+    .noborder {
+        border: 0px none white;
+    }
+
+    input,
+    input[type=text],
+    input[type=number],
+    input[type=time],
+    textarea,
+    select {
+        display: inline-block;
+        margin: auto;
+        width: 90%;
+        padding: 13.5px 20px;
+        border: 1px solid #999;
+        border-radius: 10px;
+        background-color: #f1f1f1;
+        float: left;
+        margin-bottom: 10px;
+        margin-right: 10px;
+    }
+
+    input:required:invalid,
+    textarea:required:invalid {
+        border: 1px solid red;
+    }
+
+    button {
+        display: table;
+        margin: auto;
+    }
+
+    tr:hover {
+        background-color: #f5f5f5;
+    }
+
+    .block {
+        display: block;
+        width: 250px;
+        height: 48px;
+        border: none;
+        background-color: #4CAF50;
+        padding: 14px 28px;
+        margin: 10px 10px 10px 10px;
+        font-size: 16px;
+        cursor: pointer;
+        text-align: center;
+        color: white;
+        box-shadow: 2px 2px 1px #888888;
+        float: left;
+    }
+
+    .header {
+        font-size: 1.5em;
+        font-weight: bolder;
+    }
+
+    .column {
+        float: left;
+        width: 33.33%;
+        padding: 50px;
+        text-align: center;
+        font-size: 25px;
+        cursor: pointer;
+        color: white;
+    }
+
+    .containerTab {
+        padding: 20px;
+        color: white;
+    }
+
+    /* Clear floats after the columns */
+
+    .row:after {
+        content: "";
+        display: table;
+        clear: both;
+    }
+
+    .form_radio_btn {
+        display: inline-block;
+        margin-right: 10px;
+        float: left;
+        margin-bottom: 5px;
+    }
+
+    .form_radio_btn input[type=radio] {
+        display: none;
+    }
+
+    .lines_group label {
+        display: inline-block;
+        padding: 0px 15px;
+        line-height: 48px;
+        border: 0px solid #999;
+        border-radius: 0px;
+        user-select: none;
+        float: left;
+        font-size: large;
+    }
+
+    .form_radio_btn label {
+        display: inline-block;
+        cursor: pointer;
+        padding: 0px 20px;
+        line-height: 48px;
+        border: 1px solid #999;
+        border-radius: 0px;
+        user-select: none;
+        float: left;
+    }
+
+    /* Checked */
+
+    .form_radio_btn input[type=radio]:checked+label {
+        background: #4CAF50;
+        color: #FFFFFF;
+    }
+
+    /* Hover */
+
+    .form_radio_btn label:hover {
+        background: rgba(102, 102, 102, 0.287);
+    }
+
+    /* Disabled */
+
+    .form_radio_btn input[type=radio]:disabled+label {
+        background: #efefef;
+        color: #666;
+    }
+
+    /*.pagination a.active {
+        background-color: #4CAF50;
+        color: white;
+        border: 1px solid #4CAF50;
+    }*/
+    /*.form_radio_btn a:hover:not(.active) {background-color: #ddd;}*/
+
+    .form_radio_btn label:first-of-type {
+        border-top-left-radius: 10px;
+        border-bottom-left-radius: 10px;
+    }
+
+    .form_radio_btn label:not(:last-of-type) {
+        border-right: none;
+    }
+
+    .form_radio_btn label:last-child {
+        border-top-right-radius: 10px;
+        border-bottom-right-radius: 10px;
+    }
+
+    .lines_group select {
+        width: 237px;
+        padding: 12.5px 20px;
+        border: 1px solid #999;
+        border-radius: 10px;
+        background-color: #f1f1f1;
+        float: left;
+        margin-bottom: 10px;
+        margin-right: 10px;
+    }
+
+    .lines_group table {
+        max-width: 650px;
+        min-width: 420px;
+        padding-top: 5px;
+        padding-bottom: 5px;
+        padding-left: 5px;
+        padding-right: 5px;
+        text-align: center;
+    }
+
+    .lines_group td:first-of-type {
+        width: 130px;
+    }
+
+    .lines_group td {
+        text-align: center;
+    }
+
+    textarea {
+        resize: none;
+        overflow: hidden;
+        padding-top: 12.5px;
+        padding-bottom: 12.5px;
+        min-height: 19px;
+        max-height: 500px;
+    }
+</style>
+
+</head><body>
+    <p align="left">
+        <label>
+            <span>
+                <b class="header" align="left" id="page_cap" style="background-color: lime;">PonyLab Yieldizer - состояние</b>
+            </span>
+        </label>
+    </p>
+
+    <div class="lines_group">
+        <table class="noborder">
+
+            <tbody><tr>
+                <td><b><label>pH</label></b></td>
+                <td api="values[0]/v" tag="watch" formatter="RoundTo005">7.40</td>
+            </tr>
+            <tr>
+                <td><b><label>EC</label></b></td>
+                <td api="values[1]/v" tag="watch" postfix="мСм/см" formatter="RoundTo2">мСм/см</td>
+            </tr>
+            <tr>
+                <td><b><label>T р-ра</label></b></td>
+                <td api="values[2]/v" tag="watch" postfix="*C" formatter="RoundTo1">25.1*C</td>
+            </tr>
+            <tr>
+                <td><b><label>Уровень</label></b></td>
+                <td api="values[3]/v" tag="watch" formatter="lvlToText">низкий</td>
+            </tr>
+            <tr>
+                <td><b><label>T возд</label></b></td>
+                <td api="values[4]/v" tag="watch" postfix="*C" formatter="RoundTo1">28.4*C</td>
+            </tr>
+            <tr>
+                <td><b><label>H возд</label></b></td>
+                <td api="values[5]/v" tag="watch" postfix="%" formatter="RoundTo0">16%</td>
+            </tr>
+            <tr>
+                <td><b><label onclick="{ 
+                    var data = {type: &#39;calibrateco2&#39;};
+                    let val = prompt(&#39;Поместите датчик в среду с известным CO2, отсутствии прямых солнечных лучей и T&lt;30*C, выждите 3мин и введите реальное значение ppm (400..2000), нажмите ОК&#39;, 0);
+                    if (val != null) { 
+                        data.co2 = parseInt(val);
+                    TransportSendCmd(data, res =&gt; {alert(&#39;команда&#39; + res ? &#39;отправлена&#39; : &#39;не отправлена&#39;); } );}}">CO2</label></b>
+                </td>
+                <td api="values[6]/v" tag="watch" postfix="ppm" formatter="RoundTo0">718ppm</td>
+            </tr>
+            <tr>
+                <td><b><label>Освещенность</label></b></td>
+                <td api="values[7]/v" tag="watch" postfix="лк" formatter="RoundTo1">31.1лк</td>
+            </tr>
+            <tr>
+                <td><b><label>Состояние</label></b></td>
+                <td api="description" tag="watch">перемешивание [67:41]<br>запрет долива pH/EC<br>
+ожидание выключения увлажнителя [09:10]<br>подтверждение LVL+ [159:33]<br>освещение выкл [487:56]<br>таймер 1 выкл [12:26]<br>ошибка датчика EC<br>ошибка функции EC UP<br>
+ошибка функции EC DOWN<br>
+</td>
+            </tr>
+
+            <tr>
+                <td><b><label>Время вкл</label></b></td>
+                <td api="outs/sum_on_s" tag="watch" postfix="" formatter="outputsOnTimeFormatter">таймер 1: 1.2мин<br>увлажнитель: 20.8мин<br>Выход 7: 22.5мин<br>свет: 0.2мин<br></td>
+            </tr>
+
+            <tr>
+                <td><b><label>Uptime</label></b></td>
+                <td api="uptime" tag="watch" formatter="uptimeToStr">0дн 0ч 22мин 29сек</td>
+            </tr>
+
+            <tr>
+                <td><b><label>WiFi</label></b></td>
+                <td api="wifi" tag="watch" formatter="wifiStateToView">0 dBm</td>
+            </tr>
+            <tr>
+                <td><b><label onclick="{ 
+                                let seconds = setTimeDialog(); 
+                                if (seconds != null) { 
+                                var data = {type: &#39;settime&#39;, seconds: seconds};
+                                TransportSendCmd(data, res =&gt; {alert(&#39;команда&#39; + res ? &#39;отправлена&#39; : &#39;не отправлена&#39;); } );}}">Время</label></b>
+                </td>
+                <td api="time" tag="watch" formatter="secToHHMMSS">14:52:04</td>
+            </tr>
+
+
+        </tbody></table>
+
+    </div>
+    <div style="float: none; text-align: left; ">
+        <button class="block" style="float: none; display: block;" onclick="{
+            var data = {type: &#39;reset_errors&#39;};
+            TransportSendCmd(data, function (res) {if (res !== &#39;ok&#39;) alert(&#39;команда не отправлена&#39;); });
+                     }" api="errors" tag="watch" formatter="resetErrorsFormatter">Сброс ошибок</button>
+        <button class="block" style="float: none; display: inline-block;" onclick="{
+            var data = {type: &#39;reset_outs_time_sum&#39;};
+            TransportSendCmd(data, function (res) {if (res !== &#39;ok&#39;) alert(&#39;команда не отправлена&#39;); });
+                    }">Сброс счетчиков</button>
+        <p></p>
+    </div>
+    <br>
+    <hr>
+
+    <br>
+
+    <p align="left">
+        <label>
+            <span>
+                <b class="header" align="left">Управление выходами</b>
+            </span>
+        </label>
+    </p>
+
+
+    <div class="lines_group">
+        <table class="noborder" id="outs_ctrl_table" tag="watch" api="outs"><tr><td><b><label>pH DOWN</label></b></td><td style="width: 210px;"><label>AUTO OFF</label></td><td><button class="block" style="float: none; display: inline-block; width: 100px;">ON</button><button class="block" style="float: none; display: inline-block; width: 100px;">OFF</button><button class="block" style="float: none; display: none; width: 100px;">ABORT</button></td></tr><tr><td><b><label>удобрение А</label></b></td><td style="width: 210px;"><label>AUTO OFF</label></td><td><button class="block" style="float: none; display: inline-block; width: 100px;">ON</button><button class="block" style="float: none; display: inline-block; width: 100px;">OFF</button><button class="block" style="float: none; display: none; width: 100px;">ABORT</button></td></tr><tr><td><b><label>удобрение B</label></b></td><td style="width: 210px;"><label>AUTO OFF</label></td><td><button class="block" style="float: none; display: inline-block; width: 100px;">ON</button><button class="block" style="float: none; display: inline-block; width: 100px;">OFF</button><button class="block" style="float: none; display: none; width: 100px;">ABORT</button></td></tr><tr><td><b><label>долив воды</label></b></td><td style="width: 210px;"><label>AUTO OFF</label></td><td><button class="block" style="float: none; display: inline-block; width: 100px;">ON</button><button class="block" style="float: none; display: inline-block; width: 100px;">OFF</button><button class="block" style="float: none; display: none; width: 100px;">ABORT</button></td></tr><tr><td><b><label>таймер 1</label></b></td><td style="width: 210px;"><label>AUTO OFF</label></td><td><button class="block" style="float: none; display: inline-block; width: 100px;">ON</button><button class="block" style="float: none; display: inline-block; width: 100px;">OFF</button><button class="block" style="float: none; display: none; width: 100px;">ABORT</button></td></tr><tr><td><b><label>увлажнитель</label></b></td><td style="width: 210px;"><label>AUTO ON [9.2м]</label></td><td><button class="block" style="float: none; display: inline-block; width: 100px;">ON</button><button class="block" style="float: none; display: inline-block; width: 100px;">OFF</button><button class="block" style="float: none; display: none; width: 100px;">ABORT</button></td></tr><tr><td><b><label><b><label>выход 7</label></b></label></b></td><td style="width: 210px;"><label>ON</label></td><td><button class="block" style="float: none; display: inline-block; width: 100px;">ON</button><button class="block" style="float: none; display: inline-block; width: 100px;">OFF</button><button class="block" style="float: none; display: none; width: 100px;">ABORT</button></td></tr><tr><td><b><label>вытяжка</label></b></td><td style="width: 210px;"><label>AUTO OFF</label></td><td><button class="block" style="float: none; display: inline-block; width: 100px;">ON</button><button class="block" style="float: none; display: inline-block; width: 100px;">OFF</button><button class="block" style="float: none; display: none; width: 100px;">ABORT</button></td></tr><tr><td><b><label>свет</label></b></td><td style="width: 210px;"><label>AUTO OFF</label></td><td><button class="block" style="float: none; display: inline-block; width: 100px;">ON</button><button class="block" style="float: none; display: inline-block; width: 100px;">OFF</button><button class="block" style="float: none; display: none; width: 100px;">ABORT</button></td></tr></table>
+
+    </div>
+
+
+
+    <br>
+
+
+    <br>
+    <hr>
+
+    <p align="left">
+        <label>
+            <span>
+                <b class="header" align="left">Настройки растворного узла</b>
+            </span>
+        </label>
+    </p>
+    <div class="lines_group">
+        <table class="noborder">
+            <tbody><tr>
+                <td><b><label>pH, EC, вода</label></b></td>
+                <td><label>время перемешивания</label><input type="number" step="1" min="0" max="1440" api="nsolution/mixing_time_min" tag="config_main" style="width:70px;" placeholder="60">
+                    <label>мин</label>
+                </td>
+            </tr>
+            <tr>
+                <td><b><label>pH DOWN</label></b></td>
+                <td><label>при pH &gt;</label><input type="number" step="0.1" min="4" max="12" api="nsolution/ph_down_trig" tag="config_main" style="width:70px;" placeholder="6.4">
+                    <label>вкл на </label><input type="number" step="0.1" min="0" max="600" api="nsolution/pump_ph_down_quant_s" style="width:70px;" tag="config_main" placeholder="0.2"><label>с</label>
+                </td>
+            </tr>
+            <tr>
+                <td><b><label>pH UP</label></b></td>
+                <td><label>при pH &lt; </label><input type="number" step="0.1" min="4" max="12" api="nsolution/ph_up_trig" tag="config_main" style="width:70px;" placeholder="5.4">
+                            <label>вкл на</label><input type="number" step="0.1" min="0" max="600" api="nsolution/pump_ph_up_quant_s" style="width:70px;" tag="config_main" placeholder="0.2"><label>с</label></td>
+            </tr>
+            <tr>
+                <td><b><label>разбавление</label></b></td>
+                <td><label>при EC &gt;</label><input type="number" step="0.1" min="0.7" max="5" api="nsolution/ec_down_trig_msm" tag="config_main" style="width:70px;" placeholder="1.8">
+                    <label>вкл на</label><input type="number" step="0.1" min="0" max="600" api="nsolution/pump_ec_down_quant_s" style="width:70px;" tag="config_main" placeholder="2"><label>с</label>
+                </td>
+            </tr>
+            <tr>
+                <td><b><label>долив удобр</label></b></td>
+                <td><label>при EC &lt; </label><input type="number" step="0.1" min="0.7" max="5" api="nsolution/ec_up_trig_msm" tag="config_main" style="width:70px;" placeholder="1.6">
+                            <label>вкл на</label><input type="number" step="0.1" min="0" max="600" api="nsolution/pump_ec_up_quant_s" style="width:70px;" tag="config_main" placeholder="2"><label>с</label></td>
+            </tr>
+            <tr>
+                <td><b><label>пропорции</label></b></td>
+                <td><label>B:А(0..10): </label><input type="number" step="0.01" min="0" max="10" api="nsolution/b_koeff" tag="config_main" style="width:70px;" placeholder="1">
+                    <label>С:А(0..10): </label><input type="number" step="0.01" min="0" max="10" api="nsolution/c_koeff" style="width:70px;" tag="config_main" placeholder="0">
+                </td>
+            </tr>
+            <tr>
+                <td><b><label>уровень</label></b></td>
+                <td><label>длительность долива </label> <input type="number" step="0.1" api="nsolution/pump_water_lvl_quant_s" style="width:70px;" tag="config_main" placeholder="10"><label>с</label></td>
+            </tr>
+            <tr>
+                <td><b><label></label></b></td>
+                <td><label>время подтверждения</label><input type="number" step="1" api="nsolution/lvl_ignore_time_min" tag="config_main" style="width:70px;" placeholder="5">
+                    <label> мин </label>
+                </td>
+            </tr>
+            <tr>
+                <td><b><label></label></b></td>
+                <td><label>задержка перед долив</label><input type="number" step="1" api="nsolution/lvl_run_delay_min" tag="config_main" style="width:70px;" placeholder="5">
+                    <label>мин</label>
+                </td>
+            </tr>
+            <tr>
+                <td><b><label></label></b></td>
+                <td><label>задержка после долив</label><input type="number" step="1" api="nsolution/lvl_off_delay_min" tag="config_main" style="width:70px;" placeholder="5">
+                    <label>мин</label>
+                </td>
+            </tr>
+            <tr>
+                <td><b><label>чиллер</label></b></td>
+                <td><label>вкл при</label><input type="number" step="0.1" min="5" max="30" api="nsolution/temp_ctrl_on_temp" tag="config_main" style="width:60px;" placeholder="16">
+                    <label>выкл при</label><input type="number" step="0.1" min="5" max="30" api="nsolution/temp_ctrl_off_temp" style="width:60px;" tag="config_main" placeholder="18"><label>*С</label>
+                </td>
+            </tr>
+            <tr>
+                <td><b><label></label></b></td>
+                <td><label>работа от</label><input type="number" step="0.1" min="0" max="720" api="nsolution/temp_ctrl_time_on_above_min" tag="config_main" style="width:60px;" placeholder="16">
+                    <label>до</label><input type="number" step="0.1" min="0.1" max="720" api="nsolution/temp_ctrl_time_on_below_min" style="width:60px;" tag="config_main" placeholder="18"><label>мин</label>
+                </td>
+            </tr>
+            <tr>
+                <td><b><label></label></b></td>
+                <td><label>пауза от</label><input type="number" step="0.1" min="0" max="720" api="nsolution/temp_ctrl_time_off_above_min" tag="config_main" style="width:60px;" placeholder="16">
+                    <label>мин</label>
+                </td>
+            </tr>
+            <tr>
+                <td><b><label>защита pH</label></b></td>
+                <td><label>макс. отклонение (0 - выкл, макс - 3):</label><input type="number" step="0.1" min="0" max="3" api="nsolution/ph_protection_delta" tag="config_main" style="width:60px;" placeholder="0.5">
+                </td>
+            </tr>
+            <tr>
+                <td><b><label>защита EC</label></b></td>
+                <td><label>отклонение в % (0 - выкл, макс - 30):</label><input type="number" step="1" min="0" max="30" api="nsolution/ec_protection_percent" tag="config_main" style="width:60px;" placeholder="20">
+                </td>
+            </tr>
+        </tbody></table>
+        <br>
+
+    </div>
+    <div style="float: none; text-align: left;">
+        <button onclick="SaveCfg(&#39;config_main&#39;)" class="block" style="float: none; display: inline-block;">Сохранить</button>
+        <button onclick="SetDefaultViewValues(&#39;config_main&#39;)" class="block" style="float: none; display: inline-block;">Cбросить</button>
+        <button onclick="ShowHelp(&#39;config_main&#39;)" class="block" style="float: none; display: inline-block; width: 60px;">?</button>
+        <p></p>
+    </div>
+
+    <hr>
+
+
+    <p align="left">
+        <label>
+            <span>
+                <b class="header" align="left">Настройки контроллера климата</b>
+            </span>
+        </label>
+    </p>
+    <div class="lines_group">
+        <table class="noborder">
+            <!--air_cooler-->
+            <tbody><tr>
+                <td><b><label>кондиционер</label></b></td>
+                <td><label>вкл при</label><input type="number" step="0.1" api="clim/air_cooler/thr_on" tag="config_clim" style="width:60px;" placeholder="28">
+                    <label>выкл при</label><input type="number" step="0.1" api="clim/air_cooler/thr_off" style="width:60px;" tag="config_clim" placeholder="26"><label>*С</label>
+                </td>
+            </tr>
+            <tr>
+                <td><b><label></label></b></td>
+                <td><label>работа от</label><input type="number" step="0.1" api="clim/air_cooler/t_on_min" tag="config_clim" style="width:60px;" placeholder="16">
+                    <label>до</label><input type="number" step="0.1" api="clim/air_cooler/t_on_max" style="width:60px;" tag="config_clim" placeholder="18"><label>мин</label>
+                </td>
+            </tr>
+            <tr>
+                <td><b><label></label></b></td>
+                <td><label>пауза от</label><input type="number" step="0.1" api="clim/air_cooler/t_pause" tag="config_clim" style="width:60px;" placeholder="16">
+                    <label>мин</label>
+                </td>
+            </tr>
+            <!--dehumidifier-->
+            <tr>
+                <td><b><label>осушитель</label></b></td>
+                <td><label>вкл при</label><input type="number" step="0.1" api="clim/dehumidifier/thr_on" tag="config_clim" style="width:60px;" placeholder="28">
+                    <label>выкл при</label><input type="number" step="0.1" api="clim/dehumidifier/thr_off" style="width:60px;" tag="config_clim" placeholder="26"><label>%</label>
+                </td>
+            </tr>
+            <tr>
+                <td><b><label></label></b></td>
+                <td><label>работа от</label><input type="number" step="0.1" api="clim/dehumidifier/t_on_min" tag="config_clim" style="width:60px;" placeholder="16">
+                    <label>до</label><input type="number" step="0.1" api="clim/dehumidifier/t_on_max" style="width:60px;" tag="config_clim" placeholder="18"><label>мин</label>
+                </td>
+            </tr>
+            <tr>
+                <td><b><label></label></b></td>
+                <td><label>пауза от</label><input type="number" step="0.1" api="clim/dehumidifier/t_pause" tag="config_clim" style="width:60px;" placeholder="16">
+                    <label>мин</label>
+                </td>
+            </tr>
+            <!--extractor_t-->
+            <tr>
+                <td><b><label>вытяжка (t)</label></b></td>
+                <td><label>вкл при</label><input type="number" step="0.1" api="clim/extractor_t/thr_on" tag="config_clim" style="width:60px;" placeholder="28">
+                    <label>выкл при</label><input type="number" step="0.1" api="clim/extractor_t/thr_off" style="width:60px;" tag="config_clim" placeholder="26"><label>*С</label>
+                </td>
+            </tr>
+            <tr>
+                <td><b><label></label></b></td>
+                <td><label>работа от</label><input type="number" step="0.1" api="clim/extractor_t/t_on_min" tag="config_clim" style="width:60px;" placeholder="16">
+                    <label>до</label><input type="number" step="0.1" api="clim/extractor_t/t_on_max" style="width:60px;" tag="config_clim" placeholder="18"><label>мин</label>
+                </td>
+            </tr>
+            <tr>
+                <td><b><label></label></b></td>
+                <td><label>пауза от</label><input type="number" step="0.1" api="clim/extractor_t/t_pause" tag="config_clim" style="width:60px;" placeholder="16">
+                    <label>мин</label>
+                </td>
+            </tr>
+            <!--extractor_h-->
+            <tr>
+                <td><b><label>вытяжка (H)</label></b></td>
+                <td><label>вкл при</label><input type="number" step="0.1" api="clim/extractor_h/thr_on" tag="config_clim" style="width:60px;" placeholder="28">
+                    <label>выкл при</label><input type="number" step="0.1" api="clim/extractor_h/thr_off" style="width:60px;" tag="config_clim" placeholder="26"><label>%</label>
+                </td>
+            </tr>
+            <tr>
+                <td><b><label></label></b></td>
+                <td><label>работа от</label><input type="number" step="0.1" api="clim/extractor_h/t_on_min" tag="config_clim" style="width:60px;" placeholder="16">
+                    <label>до</label><input type="number" step="0.1" api="clim/extractor_h/t_on_max" style="width:60px;" tag="config_clim" placeholder="18"><label>мин</label>
+                </td>
+            </tr>
+            <tr>
+                <td><b><label></label></b></td>
+                <td><label>пауза от</label><input type="number" step="0.1" api="clim/extractor_h/t_pause" tag="config_clim" style="width:60px;" placeholder="16">
+                    <label>мин</label>
+                </td>
+            </tr>
+            <!--humidifier-->
+            <tr>
+                <td><b><label>увлажнитель</label></b></td>
+                <td><label>вкл при</label><input type="number" step="0.1" api="clim/humidifier/thr_on" tag="config_clim" style="width:60px;" placeholder="28">
+                    <label>выкл при</label><input type="number" step="0.1" api="clim/humidifier/thr_off" style="width:60px;" tag="config_clim" placeholder="26"><label>%</label>
+                </td>
+            </tr>
+            <tr>
+                <td><b><label></label></b></td>
+                <td><label>работа от</label><input type="number" step="0.1" api="clim/humidifier/t_on_min" tag="config_clim" style="width:60px;" placeholder="16">
+                    <label>до</label><input type="number" step="0.1" api="clim/humidifier/t_on_max" style="width:60px;" tag="config_clim" placeholder="18"><label>мин</label>
+                </td>
+            </tr>
+            <tr>
+                <td><b><label></label></b></td>
+                <td><label>пауза от</label><input type="number" step="0.1" api="clim/humidifier/t_pause" tag="config_clim" style="width:60px;" placeholder="16">
+                    <label>мин</label>
+                </td>
+            </tr>
+            <!--СО2-->
+            <tr>
+                <td><b><label>СО2</label></b></td>
+                <td><label>вкл при</label><input type="number" step="0.1" api="clim/co2/thr_on" tag="config_clim" style="width:55px;" placeholder="1000">
+                    <label>выкл при</label><input type="number" step="0.1" api="clim/co2/thr_off" style="width:55px;" tag="config_clim" placeholder="1100"><label>ppm</label>
+                </td>
+            </tr>
+            <tr>
+                <td><b><label></label></b></td>
+                <td><label>работа от</label><input type="number" step="0.1" api="clim/co2/t_on_min" tag="config_clim" style="width:60px;" placeholder="16">
+                    <label>до</label><input type="number" step="0.1" api="clim/co2/t_on_max" style="width:60px;" tag="config_clim" placeholder="18"><label>мин</label>
+                </td>
+            </tr>
+            <tr>
+                <td><b><label></label></b></td>
+                <td><label>пауза от</label><input type="number" step="0.1" api="clim/co2/t_pause" tag="config_clim" style="width:60px;" placeholder="16">
+                    <label>мин</label>
+                </td>
+            </tr>
+            <!--heater-->
+            <tr>
+                <td><b><label>обогрев</label></b></td>
+                <td><label>вкл при</label><input type="number" step="0.1" api="clim/heater/thr_on" tag="config_clim" style="width:60px;" placeholder="28">
+                    <label>выкл при</label><input type="number" step="0.1" api="clim/heater/thr_off" style="width:60px;" tag="config_clim" placeholder="26"><label>*С</label>
+                </td>
+            </tr>
+            <tr>
+                <td><b><label></label></b></td>
+                <td><label>работа от</label><input type="number" step="0.1" api="clim/heater/t_on_min" tag="config_clim" style="width:60px;" placeholder="16">
+                    <label>до</label><input type="number" step="0.1" api="clim/heater/t_on_max" style="width:60px;" tag="config_clim" placeholder="18"><label>мин</label>
+                </td>
+            </tr>
+            <tr>
+                <td><b><label></label></b></td>
+                <td><label>пауза от</label><input type="number" step="0.1" api="clim/heater/t_pause" tag="config_clim" style="width:60px;" placeholder="16">
+                    <label>мин</label>
+                </td>
+            </tr>
+
+
+        </tbody></table>
+        <br>
+
+    </div>
+    <div style="float: none; text-align: left;">
+        <button onclick="SaveCfg(&#39;config_clim&#39;)" class="block" style="float: none; display: inline-block;">Сохранить</button>
+        <button onclick="SetDefaultViewValues(&#39;config_clim&#39;)" class="block" style="float: none; display: inline-block;">Cбросить</button>
+        <button onclick="ShowHelp(&#39;config_clim&#39;)" class="block" style="float: none; display: inline-block; width: 60px;">?</button>
+        <p></p>
+    </div>
+    <hr>
+
+    <p align="left">
+        <label>
+            <span>
+                <b class="header" align="left">Настройки таймеров</b>
+            </span>
+        </label>
+    </p>
+    <div class="lines_group">
+        <table class="noborder" id="timers"><tr><td><b><label>свет</label></b></td><td tag="config_timers" api="env/timers[0]"><select disabled="" style="width: 152px;"><option value="2">циклический</option><option value="3">расписание</option></select><textarea placeholder="07:00:00 - 22:00:00" style="width: 282px; height: 30px;"></textarea></td></tr><tr><td><b><label>полив</label></b></td><td tag="config_timers" api="env/timers[1]"><select style="width: 152px;"><option value="2">циклический</option><option value="3">расписание</option></select><textarea placeholder="07:00:00 - 22:00:00" style="width: 282px; height: 19px;"></textarea></td></tr><tr><td><b><label>таймер 1</label></b></td><td tag="config_timers" api="env/timers[2]"><select style="width: 152px;"><option value="2">циклический</option><option value="3">расписание</option></select><textarea placeholder="00:01:00; 00:00:05" style="width: 282px; height: 19px;"></textarea></td></tr><tr><td><b><label>таймер 2</label></b></td><td tag="config_timers" api="env/timers[3]"><select style="width: 152px;"><option value="2">циклический</option><option value="3">расписание</option></select><textarea placeholder="00:01:00; 00:00:05" style="width: 282px; height: 19px;"></textarea></td></tr><tr><td><b><label>таймер 3</label></b></td><td tag="config_timers" api="env/timers[4]"><select style="width: 152px;"><option value="2">циклический</option><option value="3">расписание</option></select><textarea placeholder="00:01:00; 00:00:05" style="width: 282px; height: 19px;"></textarea></td></tr><tr><td><b><label>таймер 4</label></b></td><td tag="config_timers" api="env/timers[5]"><select style="width: 152px;"><option value="2">циклический</option><option value="3">расписание</option></select><textarea placeholder="00:01:00; 00:00:05" style="width: 282px; height: 19px;"></textarea></td></tr><tr><td><b><label>таймер 5</label></b></td><td tag="config_timers" api="env/timers[6]"><select style="width: 152px;"><option value="2">циклический</option><option value="3">расписание</option></select><textarea placeholder="00:01:00; 00:00:05" style="width: 282px; height: 19px;"></textarea></td></tr><tr><td><b><label>таймер 6</label></b></td><td tag="config_timers" api="env/timers[7]"><select style="width: 152px;"><option value="2">циклический</option><option value="3">расписание</option></select><textarea placeholder="00:01:00; 00:00:05" style="width: 282px; height: 19px;"></textarea></td></tr></table>
+        <br>
+    </div>
+    <div style="float: none; text-align: left;">
+        <button onclick="SaveCfg(&#39;config_timers&#39;)" class="block" style="float: none; display: inline-block;">Сохранить</button>
+        <button onclick="SetDefaultViewValues(&#39;config_timers&#39;)" class="block" style="float: none; display: inline-block;">Cбросить</button>
+        <button onclick="ShowHelp(&#39;config_timers&#39;)" class="block" style="float: none; display: inline-block; width: 60px;">?</button>
+        <p></p>
+    </div>
+    <hr>
+
+
+    <p align="left">
+        <label>
+            <span>
+                <b class="header" align="left">Настройки выходов</b>
+            </span>
+        </label>
+    </p>
+    <div class="lines_group">
+        <table class="noborder" id="outsfuncs" tag="config_sys" api="outsfn"><tr><td><b><label>выход 1</label></b></td><td><select><option value="254">OFF</option><option value="255">ON</option><option value="0">pH DOWN</option><option value="1">pH UP</option><option value="2">удобрение А</option><option value="3">удобрение B</option><option value="4">удобрение С</option><option value="5">долив воды</option><option value="6">чиллер</option><option value="7">кондиционер</option><option value="8">осушитель</option><option value="9">вытяжка</option><option value="10">увлажнитель</option><option value="11">обогрев-ль</option><option value="12">клапан CO2</option><option value="13">свет</option><option value="14">полив</option><option value="15">таймер 1</option><option value="16">таймер 2</option><option value="17">таймер 3</option><option value="18">таймер 4</option><option value="19">таймер 5</option><option value="20">таймер 6</option><option value="21">перемеш-е</option></select></td></tr><tr><td><b><label>выход 2</label></b></td><td><select><option value="254">OFF</option><option value="255">ON</option><option value="0">pH DOWN</option><option value="1">pH UP</option><option value="2">удобрение А</option><option value="3">удобрение B</option><option value="4">удобрение С</option><option value="5">долив воды</option><option value="6">чиллер</option><option value="7">кондиционер</option><option value="8">осушитель</option><option value="9">вытяжка</option><option value="10">увлажнитель</option><option value="11">обогрев-ль</option><option value="12">клапан CO2</option><option value="13">свет</option><option value="14">полив</option><option value="15">таймер 1</option><option value="16">таймер 2</option><option value="17">таймер 3</option><option value="18">таймер 4</option><option value="19">таймер 5</option><option value="20">таймер 6</option><option value="21">перемеш-е</option></select></td></tr><tr><td><b><label>выход 3</label></b></td><td><select><option value="254">OFF</option><option value="255">ON</option><option value="0">pH DOWN</option><option value="1">pH UP</option><option value="2">удобрение А</option><option value="3">удобрение B</option><option value="4">удобрение С</option><option value="5">долив воды</option><option value="6">чиллер</option><option value="7">кондиционер</option><option value="8">осушитель</option><option value="9">вытяжка</option><option value="10">увлажнитель</option><option value="11">обогрев-ль</option><option value="12">клапан CO2</option><option value="13">свет</option><option value="14">полив</option><option value="15">таймер 1</option><option value="16">таймер 2</option><option value="17">таймер 3</option><option value="18">таймер 4</option><option value="19">таймер 5</option><option value="20">таймер 6</option><option value="21">перемеш-е</option></select></td></tr><tr><td><b><label>выход 4</label></b></td><td><select><option value="254">OFF</option><option value="255">ON</option><option value="0">pH DOWN</option><option value="1">pH UP</option><option value="2">удобрение А</option><option value="3">удобрение B</option><option value="4">удобрение С</option><option value="5">долив воды</option><option value="6">чиллер</option><option value="7">кондиционер</option><option value="8">осушитель</option><option value="9">вытяжка</option><option value="10">увлажнитель</option><option value="11">обогрев-ль</option><option value="12">клапан CO2</option><option value="13">свет</option><option value="14">полив</option><option value="15">таймер 1</option><option value="16">таймер 2</option><option value="17">таймер 3</option><option value="18">таймер 4</option><option value="19">таймер 5</option><option value="20">таймер 6</option><option value="21">перемеш-е</option></select></td></tr><tr><td><b><label>выход 5</label></b></td><td><select><option value="254">OFF</option><option value="255">ON</option><option value="0">pH DOWN</option><option value="1">pH UP</option><option value="2">удобрение А</option><option value="3">удобрение B</option><option value="4">удобрение С</option><option value="5">долив воды</option><option value="6">чиллер</option><option value="7">кондиционер</option><option value="8">осушитель</option><option value="9">вытяжка</option><option value="10">увлажнитель</option><option value="11">обогрев-ль</option><option value="12">клапан CO2</option><option value="13">свет</option><option value="14">полив</option><option value="15">таймер 1</option><option value="16">таймер 2</option><option value="17">таймер 3</option><option value="18">таймер 4</option><option value="19">таймер 5</option><option value="20">таймер 6</option><option value="21">перемеш-е</option></select></td></tr><tr><td><b><label>выход 6</label></b></td><td><select><option value="254">OFF</option><option value="255">ON</option><option value="0">pH DOWN</option><option value="1">pH UP</option><option value="2">удобрение А</option><option value="3">удобрение B</option><option value="4">удобрение С</option><option value="5">долив воды</option><option value="6">чиллер</option><option value="7">кондиционер</option><option value="8">осушитель</option><option value="9">вытяжка</option><option value="10">увлажнитель</option><option value="11">обогрев-ль</option><option value="12">клапан CO2</option><option value="13">свет</option><option value="14">полив</option><option value="15">таймер 1</option><option value="16">таймер 2</option><option value="17">таймер 3</option><option value="18">таймер 4</option><option value="19">таймер 5</option><option value="20">таймер 6</option><option value="21">перемеш-е</option></select></td></tr><tr><td><b><label>выход 7</label></b></td><td><select><option value="254">OFF</option><option value="255">ON</option><option value="0">pH DOWN</option><option value="1">pH UP</option><option value="2">удобрение А</option><option value="3">удобрение B</option><option value="4">удобрение С</option><option value="5">долив воды</option><option value="6">чиллер</option><option value="7">кондиционер</option><option value="8">осушитель</option><option value="9">вытяжка</option><option value="10">увлажнитель</option><option value="11">обогрев-ль</option><option value="12">клапан CO2</option><option value="13">свет</option><option value="14">полив</option><option value="15">таймер 1</option><option value="16">таймер 2</option><option value="17">таймер 3</option><option value="18">таймер 4</option><option value="19">таймер 5</option><option value="20">таймер 6</option><option value="21">перемеш-е</option></select></td></tr><tr><td><b><label>выход 8</label></b></td><td><select><option value="254">OFF</option><option value="255">ON</option><option value="0">pH DOWN</option><option value="1">pH UP</option><option value="2">удобрение А</option><option value="3">удобрение B</option><option value="4">удобрение С</option><option value="5">долив воды</option><option value="6">чиллер</option><option value="7">кондиционер</option><option value="8">осушитель</option><option value="9">вытяжка</option><option value="10">увлажнитель</option><option value="11">обогрев-ль</option><option value="12">клапан CO2</option><option value="13">свет</option><option value="14">полив</option><option value="15">таймер 1</option><option value="16">таймер 2</option><option value="17">таймер 3</option><option value="18">таймер 4</option><option value="19">таймер 5</option><option value="20">таймер 6</option><option value="21">перемеш-е</option></select></td></tr><tr><td><b><label>выход 9</label></b></td><td><select><option value="254">OFF</option><option value="255">ON</option><option value="0">pH DOWN</option><option value="1">pH UP</option><option value="2">удобрение А</option><option value="3">удобрение B</option><option value="4">удобрение С</option><option value="5">долив воды</option><option value="6">чиллер</option><option value="7">кондиционер</option><option value="8">осушитель</option><option value="9">вытяжка</option><option value="10">увлажнитель</option><option value="11">обогрев-ль</option><option value="12">клапан CO2</option><option value="13">свет</option><option value="14">полив</option><option value="15">таймер 1</option><option value="16">таймер 2</option><option value="17">таймер 3</option><option value="18">таймер 4</option><option value="19">таймер 5</option><option value="20">таймер 6</option><option value="21">перемеш-е</option></select></td></tr></table>
+        <br>
+    </div>
+    <div style="float: none; text-align: left;">
+        <button onclick="SaveCfg(&#39;config_sys&#39;)" class="block" style="float: none; display: inline-block;">Сохранить</button>
+        <button onclick="SetDefaultViewValues(&#39;config_sys&#39;)" class="block" style="float: none; display: inline-block;">Cбросить</button>
+        <button onclick="ShowHelp(&#39;config_sys&#39;)" class="block" style="float: none; display: inline-block; width: 60px;">?</button>
+        <p></p>
+    </div>
+    <hr>
+
+
+
+
+
+
+
+
+    <br>
+    <p align="left">
+        <label>
+            <span>
+                <b class="header" align="left">Калибровка pH</b><b class="header"> (Raw = </b> <b class="header" api="values[0]/r" tag="watch" formatter="RoundTo1">-20.6</b><b class="header"> mV)</b>
+            </span>
+        </label>
+    </p>
+    <div class="lines_group">
+        <table class="noborder">
+            <tbody><tr>
+                <td>
+                    <b><label>Точка 1</label></b>
+                </td>
+                <td>
+                    <input api="parameters[0]/cal[0]/v" tag="config_cal" style="width:114px;" placeholder="4.01?"><input api="parameters[0]/cal[0]/r" style="width:114px;" tag="config_cal" placeholder="Raw, mV">
+                    <button onclick="{CopyElemToElemValue(&#39;parameters[0]/cal[0]/r&#39;, &#39;values[0]/r&#39;);}" class="block" style="width:156px; margin-top: 0px; margin-left: 0px;">Вставить</button>
+
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <b><label>Точка 2</label></b>
+                </td>
+                <td>
+                    <input api="parameters[0]/cal[1]/v" tag="config_cal" style="width:114px;" placeholder="6.86?"><input api="parameters[0]/cal[1]/r" style="width:114px;" tag="config_cal" placeholder="Raw, mV">
+                    <button onclick="{CopyElemToElemValue(&#39;parameters[0]/cal[1]/r&#39;, &#39;values[0]/r&#39;);}" class="block" style="width:156px; margin-top: 0px; margin-left: 0px;">Вставить</button>
+                </td>
+            </tr>
+
+        </tbody></table>
+    </div>
+
+    <br>
+
+
+    <p align="left">
+        <label>
+            <span>
+                <b class="header" align="left">Калибровка ЕС</b><b class="header"> (Raw = </b> <b class="header" api="values[1]/r" tag="watch" formatter="RoundTo1">1001064.0</b><b class="header"> Ом, </b> <b class="header" api="raw_ec_msm" tag="watch" formatter="RoundTo2">0.00</b> <b>мСм/см)</b>
+            </span>
+        </label>
+    </p>
+    <div class="lines_group">
+        <table class="noborder">
+            <tbody><tr>
+                <td>
+                    <b><label>Точка 1</label></b>
+                </td>
+                <td>
+                    <input api="parameters[1]/cal[0]/v" tag="config_cal" style="width:114px;" placeholder="3.013?"><input api="parameters[1]/cal[0]/r" style="width:114px;" tag="config_cal" placeholder="Raw, мСм/см">
+                    <button onclick="{CopyElemToElemValue(&#39;parameters[1]/cal[0]/r&#39;, &#39;raw_ec_msm&#39;);}" class="block" style="width:156px; margin-top: 0px; margin-left: 0px;">Вставить</button>
+
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <b><label>Точка 2</label></b>
+                </td>
+                <td>
+                    <input api="parameters[1]/cal[1]/v" tag="config_cal" style="width:114px;" placeholder="1.095?"><input api="parameters[1]/cal[1]/r" style="width:114px;" tag="config_cal" placeholder="Raw, мСм/см">
+                    <button onclick="{CopyElemToElemValue(&#39;parameters[1]/cal[1]/r&#39;, &#39;raw_ec_msm&#39;);}" class="block" style="width:156px; margin-top: 0px; margin-left: 0px;">Вставить</button>
+                </td>
+            </tr>
+            <tr>
+                <td><b><label></label></b></td>
+                <td><label>темпер. коэфф EC</label><input type="number" step="0.1" min="1" max="3" api="nsolution/ec_kt_percent" tag="config_cal" style="width:70px;" placeholder="2.0">
+                    <label>%/*C</label>
+                </td>
+            </tr>
+
+        </tbody></table>
+    </div>
+
+
+
+
+    <br>
+
+    <p align="left">
+        <label>
+            <span>
+                <b class="header" align="left">Калибровка температуры</b><b class="header"> (Raw = </b> <b class="header" api="values[2]/r" tag="watch" formatter="RoundTo1">9975.6</b><b class="header"> Ом)</b>
+            </span>
+        </label>
+    </p>
+    <div class="lines_group">
+        <table class="noborder">
+            <tbody><tr>
+                <td>
+                    <b><label>Точка 1</label></b>
+                </td>
+                <td>
+                    <input api="parameters[2]/cal[0]/v" tag="config_cal" style="width:114px;" placeholder="22?"><input id="temp_r1" api="parameters[2]/cal[0]/r" style="width:114px;" tag="config_cal" placeholder="Raw, Ом">
+                    <button onclick="{CopyElemToElemValue(&#39;parameters[2]/cal[0]/r&#39;, &#39;values[2]/r&#39;);}" class="block" style="width:156px; margin-top: 0px; margin-left: 0px;">Вставить</button>
+                </td>
+            </tr>
+        </tbody></table>
+    </div>
+    <br>
+
+    <p align="left">
+        <label>
+            <span>
+                <b class="header" align="left">Линеаризация T raw полиномом 3 степени</b>
+            </span>
+        </label>
+    </p>
+    <div class="lines_group">
+        <table class="noborder">
+            <tbody><tr>
+                <td>
+                    <b><label>x^3..x^0</label></b>
+                </td>
+                <td>
+                    <input api="nsolution/t_res/k3" tag="config_cal" style="width:60px;" placeholder="k3 = 0?">
+                    <input api="nsolution/t_res/k2" tag="config_cal" style="width:60px;" placeholder="k2 = 0?">
+                    <input api="nsolution/t_res/k1" tag="config_cal" style="width:60px;" placeholder="k1 = 0?">
+                    <input api="nsolution/t_res/k0" tag="config_cal" style="width:60px;" placeholder="k0 = 0?">
+                </td>
+            </tr>
+        </tbody></table>
+    </div>
+
+
+
+
+
+    <button onclick="SaveCfg(&#39;config_cal&#39;)" class="block">Сохранить</button>
+    <button onclick="SetDefaultViewValues(&#39;config_cal&#39;)" class="block">Сбросить</button>
+    <button onclick="ShowHelp(&#39;config_cal&#39;)" class="block" style=" width: 60px;">?</button>
+
+
+    <br> <br><br>
+    <h6 align="left">(c) 2024, (c)<a href="https://ponylab.ru/">PonyLab</a></h6>
+    <h6 align="left"><label api="ver" tag="watch">v1.1.5567 - 2025-08-19 18:03:19.271002</label></h6>
+
+
+
+<script>
+    var cfg_json = `{"nsolution":{"ph_down_trig":6.3,"ph_up_trig":5.6,"pump_ph_down_quant_s":0.5,"pump_ph_up_quant_s":0.5,"ec_up_trig_msm":1.7,"ec_down_trig_msm":1.9,"pump_ec_up_quant_s":10,"pump_ec_down_quant_s":10,"mixing_time_min":20,"pump_water_lvl_quant_s":10,"lvl_off_delay_min":0,"lvl_ignore_time_min":1,"lvl_run_delay_min":0,"temp_ctrl_on_temp":21,"temp_ctrl_off_temp":19,"temp_ctrl_time_on_above_min":3,"temp_ctrl_time_on_below_min":10,"temp_ctrl_time_off_above_min":5,"ec_protection_percent":15,"ph_protection_delta":0.4,"ec_kt_percent":2.1,"b_koeff":1.01,"c_koeff":0,"outsfn":[0,2,3,4,8,5,6,9,7]},"clim":{"air_cooler":{"thr_on":29,"thr_off":26.5,"t_on_min":6,"t_on_max":120,"t_pause":4},"dehumidifier":{"thr_on":70,"thr_off":60,"t_on_min":6,"t_on_max":60,"t_pause":3},"extractor_t":{"thr_on":28.5,"thr_off":26.5,"t_on_min":3,"t_on_max":60,"t_pause":3},"extractor_h":{"thr_on":70,"thr_off":60,"t_on_min":3,"t_on_max":60,"t_pause":3},"humidifier":{"thr_on":40,"thr_off":50,"t_on_min":3,"t_on_max":60,"t_pause":3},"co2":{"thr_on":1100,"thr_off":1200,"t_on_min":3,"t_on_max":10,"t_pause":3},"heater":{"thr_on":18,"thr_off":20,"t_on_min":3,"t_on_max":10,"t_pause":0}},"env":{"timers":[{"m":3,"data":{"dbegin":0,"dskip":0,"table":[{"t1":25200,"t2":57601}]}},{"m":2,"data":{"t1":210,"t2":1080}},{"m":2,"data":{"t1":5,"t2":4}},{"m":2,"data":{"t1":2,"t2":1}},{"m":2,"data":{"t1":180,"t2":3600}},{"m":2,"data":{"t1":180,"t2":3600}}]}}`;
+    var state_json = `{"values":[{"r":0,"v":5.86},{"r":91308.48,"v":1.64},{"r":3651.812,"v":23.5},{"r":7,"v":"норма"},{"r":25.1,"v":25.1},{"r":43,"v":43},{"r":450,"v":450}],"cfghsh":5114,"uptime":73,"wifi":-28}`;
+    var out_functions_list = ["pH DOWN", "pH UP", "удобрение А", "удобрение B", "удобрение С", "долив воды", "чиллер", "кондиционер", "осушитель", "вытяжка", "увлажнитель", "обогрев-ль", "клапан CO2", "свет", "полив", "таймер 1", "таймер 2", "таймер 3", "таймер 4", "таймер 5", "таймер 6",  "перемеш-е"];
+    var outs_func_map = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+    var default_views_values = {
+        "config_main": cfg_json,
+        "config_clim": cfg_json,
+        "config_cal": cfg_json,
+        "config_sys": cfg_json,
+        "config_timers": cfg_json,
+        "state": state_json
+    };
+
+    var help_str = {
+        "config_main": "см инструкцию",
+        "config_clim": "логика работы каждого модуля следующая: если измеряемый параметр пересекает порог включения - происходит включение выхода; выход будет работать не менее минимального заданного времени (это особенно важно для кондиционеров и тд), далее если параметр пересечет порог отключения - выход будет отключен; если в течение времени 'работа до' параметр так и не пересечет порог отключения - выход будет принудительно отключен и пробудет выключенным в течение времени 'пауза от'. Далее цикл повторится: включение, если пересекается порог включения и тд",
+        "config_cal": "Опускаете датчик в калибровочный раствор, ждете стабилизации показаний (перестало расти/падать, может занять до 5..10 мин), жмете 'запомнить' - это скопирует Raw значение в поле калибровки; далее жмете 'сохранить'; заводские значения калибровки pH примерно следующие: 7 - 0, 4.01 - 165; калибровки ЕС: 1.1 - 1.2, 3.1 - 2.8; Тк = 2.1%/*С, калибровки Т - 25 - 10000; линеаризации Т: -1.23e-9, 0.0000183, 1.111, 0",
+        "config_sys": "У прибора 9 выходов 12В, сгруппированных в 3 разъема; функций больше - есть возможность назначит каждому выходу функцию; можно назначить одну функцию нескольким выходам.",
+        "config_timers": "Таймеры могут работать в режиме расписания или в циклическом режиме (кроме света). В режиме расписания доступно до 30 интервалов работы",
+    };
+
+    function setTimeDialog() {
+        let time = new Date();
+        let nowtime = (' 0' + time.getHours()).slice(-2) + ':' + ('0' + time.getMinutes()).slice(-2) + ':' + ('0' + time.getSeconds()).slice(-2);
+        let input = prompt("Установка времени:", nowtime);
+        if (input != null) {
+            try {
+                let hh = input.substr(0, 2);
+                let mm = input.substr(3, 5);
+                let ss = input.substr(6, 8);
+                let seconds = parseInt(hh) * 3600 + parseInt(mm) * 60 + (ss != "" ? parseInt(ss) : 0);
+                if (seconds < 24 * 3600) {
+                    return seconds;
+                }
+            } catch {
+                alert("Неверный формат времени!");
+            }
+        }
+        return null;
+    }
+
+
+    class OutsFuncSelectorComponent {
+        constructor(parent, onchange, count) {
+            this._root_table = parent;
+            this._model = {};
+            this._onchange = onchange;
+            this._count = count;
+        }
+        UpdateModel(functions_list) {
+            this._model = {
+                functions_list: (functions_list) ? [...functions_list] : [],
+                selections: []
+            };
+            this.Redraw();
+        }
+        GetState() {
+            let state = [];
+            let selects = this._root_table.querySelectorAll('select');
+            for (let index = 0; index < this._count; index++) {
+                state.push(selects[index].value);
+            }
+            return state;
+        }
+        SetState(new_states) {
+            let selects = this._root_table.querySelectorAll('select');
+            for (let index = 0; index < this._count; index++) {
+                selects[index].value = new_states[index];
+            }
+        }
+        Redraw() {
+            let componentInstance = this;
+            this._root_table.innerHTML = "";
+            for (let index = 0; index < this._count; index++) {
+                let tr = this._root_table.appendChild(createEl("tr"));
+                tr.innerHTML += `<td><b><label>выход ${index + 1}</label></b></td>`;
+                let td2 = tr.appendChild(createEl("td"));
+                let select = td2.appendChild(createEl("select"));
+                select.innerHTML += `<option value="254">OFF</option>`;
+                select.innerHTML += `<option value="255">ON</option>`;
+                for (let i = 0; i < this._model.functions_list.length; i++) {
+                    select.innerHTML += `<option value="${i}">${this._model.functions_list[i]}</option>`;
+                }
+                select.data = {};
+                select.data.index = index;
+                select.onchange = function () {
+                    componentInstance._onchange([this.data.index, this.selectedIndex]);
+                };
+            }
+            this._root_table.setAttribute("tag", "config_sys");
+            this._root_table.setAttribute("api", "outsfn");
+            //console.log("componentInstance.getState:", componentInstance.GetState());
+            this._root_table.encoder = function () {
+                return componentInstance.GetState();
+            };
+            this._root_table.formatter = function (data, control) {
+                componentInstance.SetState(data);
+            };
+        }
+
+    }
+
+    class TimerConfigComponent {
+        constructor(parent, onchange, caption, api, api_group, mode_fixed) {
+            this._onchange = onchange;
+            this._root_elem = parent;
+            this._caption = caption;
+            this._api = api;
+            this._api_group = api_group;
+            this._mode_fixed = mode_fixed;
+            this._model = {};
+            let componentInstance = this;
+            this._root_elem.innerHTML = "";
+            let tr = this._root_elem; // .appendChild(createEl("tr"));
+            tr.innerHTML += `<td><b><label>${this._caption}</label></b></td>`;
+            let td2 = tr.appendChild(createEl("td"));
+            let select = td2.appendChild(createEl("select"));
+            select.style = "width:152px;";
+            select.innerHTML += `<option value="2">циклический</option>`;
+            select.innerHTML += `<option value="3">расписание</option>`;
+            if (this._mode_fixed) {
+                this._model.data = {};
+                this._model.m = this._mode_fixed;
+                select.value = this._mode_fixed;
+                select.disabled = "true";
+            }
+            let textarea = td2.appendChild(createEl("textarea"));
+            textarea.style = "width:282px; height: 19px;";
+            textarea.oninput = function () {
+                componentInstance.correctTextareaSize(this);
+                var content = this.value.replace(/\n+\s*$/m, '');
+                var lines = content.split("\n");
+                var regexp = select.value == 2 ? /^\s*\d\d([:]\d\d){1,2}\s*;\s*\d\d([:]\d\d){1,2}\s*$/ : /^\s*\d\d([:]\d\d){1,2}\s*-\s*\d\d([:]\d\d){1,2}\s*$/;
+                var correct = true;
+                if (select.value == 2 && lines.length > 1) {
+                    correct = false;
+                }
+                lines.forEach(line => {
+                    if (!line.match(regexp)) {
+                        correct = false;
+                    }
+                });
+                this.style.backgroundColor = correct ? "white" : "#f7b4b0";
+                // + обновление модели
+                if (!correct) {
+                    console.log("настройки таймера не валидны. Модель не обновлена");
+                    return "";
+                } else {
+                    componentInstance._model.data = {};
+                    componentInstance._model.m = parseInt(select.value);
+                    var content = textarea.value.replace(/\n+\s*$/m, '');
+                    var lines = content.split("\n");
+                    lines.forEach(line => {
+                        var times = line.match(/\d\d([:]\d\d){1,2}/mg); // /^\s*(\d\d([:]\d\d){1,2})\s*(-|;)\s*(\d\d([:]\d\d){1,2})\s*$/mg
+                        var t1 = HHMMssToSec(times[0]);
+                        var t2 = HHMMssToSec(times[1]);
+                        if (componentInstance._model.m == 2) {
+                            componentInstance._model.data = {
+                                t1: t1,
+                                t2: t2
+                            };
+                        } else {
+                            if (componentInstance._model.data.table == undefined) {
+                                componentInstance._model.data = {
+                                    dbegin: 0,
+                                    dskip: 0,
+                                    table: []
+                                };
+                            }
+                            componentInstance._model.data.table.push({
+                                t1: t1,
+                                t2: t1 < t2 ? t2 - t1 : 24*3600 - t1 + t2
+                            });
+                        }
+
+                    });
+                }
+                if (typeof componentInstance._onchange === "function") {
+                    componentInstance._onchange();
+                }
+            };
+
+            select.data = {};
+            select.onchange = function () {
+                if (this.value == 2) {
+                    componentInstance._model.m = 2;
+                    componentInstance._model.data = {
+                        t1: 180,
+                        t2: 3600
+                    };
+                } else if (this.value == 3) {
+                    componentInstance._model.m = 3;
+                    componentInstance._model.data = {
+                        table: [{
+                            t1: 3600 * 7,
+                            t2: 3600 * 15
+                        }],
+                        dbegin: 0,
+                        dskip: 0
+                    };
+                }
+                componentInstance.Redraw();
+                if (typeof componentInstance._onchange === "function") {
+                    componentInstance._onchange();
+                }
+            };
+            if (this._api_group) {
+                td2.setAttribute("tag", this._api_group);
+            }
+            if (this._api) {
+                td2.setAttribute("api", this._api);
+            }
+            td2.formatter = function (data) {
+                componentInstance.SetState(data);
+            };
+            td2.encoder = function () {
+                return componentInstance.GetState();
+            };
+        }
+        correctTextareaSize(area) {
+            area.style.height = "5px";
+            area.style.height = (area.scrollHeight - 25) + "px";
+        }
+        GetState() {
+            return this._model;
+        }
+        SetState(new_states) {
+            this._model = new_states;
+            this.Redraw();
+        }
+        Redraw() {
+            let componentInstance = this;
+            let tr = this._root_elem;
+            let select = this._root_elem.querySelectorAll('select')[0];
+            let textarea = this._root_elem.querySelectorAll('textarea')[0];
+            // change select index, update textarea content by model 
+            select.value = this._model.m; // == 2 ? 
+            if (this._model.m == 2) {
+                textarea.placeholder = "00:01:00; 00:00:05"
+                var s = secToHHMMSS(this._model.data.t1) + "; " + secToHHMMSS(this._model.data.t2);
+                textarea.value = s;
+            } else if (this._model.m == 3) {
+                textarea.placeholder = "07:00:00 - 22:00:00"
+                var s = "";
+                this._model.data.table.forEach(elem => {
+                    s += secToHHMMSS(elem.t1) + " - " + secToHHMMSS(elem.t1 + elem.t2) + "\n";
+                });
+                textarea.value = s.replace(/\n+\s*$/m, '');
+            } else {
+                select.value = 2;
+                textarea.value = "";
+                textarea.placeholder = "00:01:00; 00:00:05"
+            }
+            this.correctTextareaSize(textarea);
+        }
+
+    }
+
+
+    class TimersConfigComponent {
+        constructor(parent, onchange, count) {
+            this._root_table = parent;
+            this._model = {};
+            this._onchange = onchange;
+            this._count = count;
+            this._timers = [];
+
+            // создать таймер на свет с залоченным режимом, создать таймер на полив, создать 6 таймера; установить энкодер и форматтер; 
+            let componentInstance = this;
+            this._root_table.innerHTML = "";
+            for (let index = 0; index < this._count; index++) {
+                let tr = this._root_table.appendChild(createEl("tr"));
+                let caption = index == 0 ? "свет" : (index == 1 ? "полив" : ("таймер " + (index - 1)));
+                let api = "env/timers[" + index + "]";
+
+                let timer = new TimerConfigComponent(tr, function () {
+                    if (typeof componentInstance._onchange === "function") {
+                        componentInstance._onchange(index, this.GetState());
+                    }
+                    //console.log("tim changed", index, timer.GetState());
+                }, caption, api, "config_timers", index == 0 ? 3 : undefined);
+
+
+                timer.SetState({
+                    m: 3,
+                    data: {
+                        table: [{
+                            t1: 25200,
+                            t2: 54000
+                        }]
+                    }
+                });
+                this._timers.push(timer);
+            }
+            // this._root_table.setAttribute("tag", "config_timers");
+            // this._root_table.setAttribute("api", "env/timers");
+            this._root_table.encoder = function () {
+                return componentInstance.GetState();
+            };
+            this._root_table.formatter = function (data, control) {
+                componentInstance.SetState(data);
+            };
+        }
+        GetState() {
+            let state = [];
+            for (let index = 0; index < this._timers.length; index++) {
+                state.push(this._timers[index].GetState());
+            }
+            return state;
+        }
+        SetState(new_states) {
+            for (let index = 0; index < new_states.length && index < this._timers.length; index++) {
+                this._timers[index].SetState(new_states[index]);
+            }
+        }
+
+        Redraw() {
+
+        }
+
+    }
+
+
+    class OutputsControllerComponent {
+        constructor(parent, onchange, count) {
+            this._root_table = parent;
+            this._model = {
+                outs: {}
+            };
+            this._onchange = onchange;
+            this._count = count;
+            this._outs_lines_tr = [];
+
+            // создать строки по числу выходов (название, режим + время, кнопки управления), подсоединить события; в Redraw в зависимости от флагов менять видимость кнопок, состояние и время  
+            let componentInstance = this;
+            this._root_table.innerHTML = "";
+            for (let index = 0; index < this._count; index++) {
+                let tr = this._root_table.appendChild(createEl("tr"));
+                let caption = `<b><label>выход ${index + 1}</label></b>`;
+                tr.appendChild(createEl("td")).innerHTML = caption;
+                let td2 = tr.appendChild(createEl("td"));
+                td2.style = "width: 210px;";
+                let td3 = tr.appendChild(createEl("td"));
+                td2.appendChild(createEl("label")).innerHTML = "AUTO OFF ";
+                let btn1 = td3.appendChild(createEl("button"));
+                btn1.innerHTML = "ON";
+                btn1.setAttribute("class", "block");
+                btn1.style = "float: none; display: inline-block; width: 100px;";
+                let btn2 = td3.appendChild(createEl("button"));
+                btn2.innerHTML = "OFF";
+                btn2.setAttribute("class", "block");
+                btn2.style = "float: none; display: inline-block; width: 100px;";
+                let btn3 = td3.appendChild(createEl("button"));
+                btn3.innerHTML = "ABORT";
+                btn3.setAttribute("class", "block");
+                btn3.style = "float: none; display: none; width: 100px;";
+                this._outs_lines_tr.push(tr);
+
+                btn1.onclick = function () {
+                    let data = {
+                        type: 'out_ctrl',
+                        num: index,
+                        state: 1,
+                        time: parseFloat(prompt("Enter time in sec", 0)),
+                    }
+                    console.log(data);
+                    TransportSendCmd(data, function (res) {
+                        if (res !== 'ok') alert('команда не отправлена');
+                    });
+                }
+
+                btn2.onclick = function () {
+                    let data = {
+                        type: 'out_ctrl',
+                        num: index,
+                        state: 0,
+                        time: parseFloat(prompt("Enter time in sec", 0)),
+                    }
+                    console.log(data);
+                    TransportSendCmd(data, function (res) {
+                        if (res !== 'ok') alert('команда не отправлена');
+                    });
+                }
+
+                btn3.onclick = function () {
+                    let data = {
+                        type: 'out_ctrl',
+                        num: index,
+                        state: 0,
+                        time: 0,
+                    }
+                    console.log(data);
+                    TransportSendCmd(data, function (res) {
+                        if (res !== 'ok') alert('команда не отправлена');
+                    });
+                }
+
+            }
+            this._root_table.setAttribute("tag", "watch");
+            this._root_table.setAttribute("api", "outs");
+
+            this._root_table.formatter = function (data, control) {
+                componentInstance.SetState(data);
+            };
+        }
+
+        SetState(new_states) {
+            //console.log(new_states);
+            this._model.outs = {
+                ...new_states
+            };
+            this.Redraw();
+        }
+
+        Redraw() {
+            // для каждого выхода устанавливаем состояние и скрываем/показываем кнопки 
+            for (let index = 0; index < this._count; index++) {
+                let tr = this._outs_lines_tr[index];
+                let td1 = tr.querySelectorAll('td')[0];
+                let td2 = tr.querySelectorAll('td')[1];
+                let td3 = tr.querySelectorAll('td')[2];
+                let label_caption = td1.querySelectorAll('label')[0];
+
+                let func_num = outs_func_map[index];
+
+                label_caption.innerHTML = (func_num == 254 || func_num == 255) ? `<b><label>выход ${index + 1}</label></b>` : out_functions_list[func_num];
+                let label = td2.querySelectorAll('label')[0];
+                let btn1 = td3.querySelectorAll('button')[0];
+                let btn2 = td3.querySelectorAll('button')[1];
+                let btn3 = td3.querySelectorAll('button')[2];
+                let outs = this._model.outs;
+                let overrd_time = outs.ovrrd_time[index];
+                label.innerHTML = overrd_time > 0 ? ("MANUAL " + (outs.ovrrd_state[index] ? "ON " : "OFF ") + "[" + secAdaptiveFormatter(overrd_time) + "]") : func_num == 255 ? "ON" : func_num == 254 ? "OFF" : ("AUTO " + (outs.func_cntdn_s[func_num] > 0 ? "ON " + "[" + secAdaptiveFormatter(outs.func_cntdn_s[func_num]) + "]" : "OFF"));
+                btn1.style.display = overrd_time > 0 ? "none" : "inline-block";
+                btn2.style.display = overrd_time > 0 ? "none" : "inline-block";
+                btn3.style.display = overrd_time > 0 ? "inline-block" : "none";
+            }
+        }
+
+    }
+
+
+
+
+
+
+    function lvlToText(v) {
+        return (v == 0) ? "низкий" : (v == 1) ? "в самый раз" : (v == 2) ? "перелив" : "???";
+    }
+
+
+    function ec_encoder_formatter(v) {
+        return (1000.0 / v).toFixed(2);
+    }
+
+    function RoundTo0(val, t) {
+        return (val == undefined) ? '' : val.toFixed(0);
+    }
+
+    function RoundTo2(val, t) {
+        return (val == undefined) ? '' : val.toFixed(2);
+    }
+
+    function uptimeToStr(s) {
+        var t = {};
+        t.days = Math.trunc(s / (3600 * 24));
+        s -= t.days * 3600 * 24;
+        t.hour = Math.trunc(s / 3600);
+        s -= t.hour * 3600;
+        t.minute = Math.trunc(s / 60);
+        s -= t.minute * 60;
+        return `${t.days}дн ${t.hour}ч ${t.minute}мин ${s}сек`;
+    }
+
+
+    function secAdaptiveFormatter(sec) {
+        let t = {};
+        let res = "";
+        let s = sec;
+        t.days = Math.trunc(s / (3600 * 24));
+        s -= t.days * 3600 * 24;
+        t.hour = Math.trunc(s / 3600);
+        s -= t.hour * 3600;
+        t.minute = Math.trunc(s / 60);
+        s -= t.minute * 60;
+        if (t.days) {
+            res = `${(sec / (3600 * 24)).toFixed(1)}дн`;
+        } else if (t.hour > 10) {
+            res = `${((sec - t.days * 3600 * 24) / (3600)).toFixed(0)}ч`;
+        } else if (t.hour) {
+            res = `${((sec - t.days * 3600 * 24) / (3600)).toFixed(1)}ч`;
+        } else if (t.minute > 10) {
+            res = `${((sec - t.days * 3600 * 24 - t.hour * 3600) / (60)).toFixed(0)}м`;
+        } else if (t.minute) {
+            res = `${((sec - t.days * 3600 * 24 - t.hour * 3600) / (60)).toFixed(1)}м`;
+        } else if (s > 10) {
+            res = `${s.toFixed(0)}с`;
+        } else {
+            res = `${s.toFixed(1)}с`;
+        }
+        return res;
+    }
+
+    function RoundTo1(val, t) {
+        return (val == undefined) ? '' : val.toFixed(1);
+    }
+
+    function RoundTo005(v) {
+        return (Math.ceil(v * 20) / 20).toFixed(2);
+    }
+
+    function CopyElemToElemValue(api_to, api_from) {
+        UpdateElemValueByApiTag(api_to, GrabElemValueByApiTag(api_from), true);
+    }
+
+    function wifiStateToView(t) {
+        return (t.toString() + " dBm");
+    }
+
+    function testfunc(p1, p2) {
+
+
+        return function (p1, p2) {
+            console.log("p1:", p1, ", p2:", p2);
+            return p2;
+        };
+    }
+
+    function createEl(id) {
+        return document.createElement(id);
+    }
+
+
+    function InitOutsFuncsArea(table_id, func_list, outs_count) {
+        // создаем внутри count строк таблицы, в которых размещаем выход + номер, выпадающий список с функциями (которые берутся из массива)
+        // out_functions_list
+        let table = document.getElementById(table_id);
+        let area = new OutsFuncSelectorComponent(table, function (x) {
+            console.log(x);
+        }, outs_count);
+        area.UpdateModel(func_list);
+
+    }
+
+
+    function secToHHMMSS(s) {
+        var t = {};
+        t.days = Math.trunc(s / (3600 * 24));
+        s -= t.days * 3600 * 24;
+        t.hour = Math.trunc(s / 3600);
+        s -= t.hour * 3600;
+        t.minute = Math.trunc(s / 60);
+        s -= t.minute * 60;
+        return `${(t.hour < 10) ? '0' + t.hour : t.hour}:${(t.minute < 10) ? '0' + t.minute : t.minute}:${(s < 10) ? '0' + s : s}`;
+    }
+
+    function HHMMssToSec(s) {
+        var hh = s.substr(0, 2);
+        var mm = s.substr(3, 5);
+        var ss = s.substr(6, 8);
+        return parseInt(hh) * 3600 + parseInt(mm) * 60 + (ss != "" ? parseInt(ss) : 0);
+    }
+
+    function secToMin(d) {
+        return (d / 60).toFixed(1);
+    }
+
+    function minToSec(d) {
+        return (d * 60);
+    }
+
+    function outputsOnTimeFormatter(data) {
+        let res = '';
+        // у меня есть номера выходов, нужно узнать функции => извлечь из map; 
+        for (let i = 0; i < outs_func_map.length; i++) {
+
+            res += data[i] > 0 ? (outs_func_map[i] == 255 || outs_func_map[i] == 254 ? `Выход ${i + 1}` : out_functions_list[outs_func_map[i]]) + ': ' + secToMin(data[i]) + 'мин<br>' : '';
+        }
+        return res;
+    }
+
+    function resetErrorsFormatter(data, control) {
+        control.style.display = (data == 0) ? "none" : "block";
+        return null;
+    }
+
+
+    var fieldsNotUpdatedAfterOutsOff = false;
+
+
+
+
+    function TransportGetState(callback) {
+        ajax.get('/state', {}, function (res) {
+            callback(res);
+        });
+    }
+
+    function TransportGetCfg(callback) {
+        ajax.get('/cfg', {}, function (res) {
+            callback(res);
+        });
+    }
+
+    function TransportSetCfg(data, callback) {
+        ajax.post('/cfg', {
+            jdata: JSON.stringify(data)
+        }, function (res) {
+            callback(res);
+        });
+    }
+
+    function TransportSendCmd(cmd, callback) {
+        ajax.post('/cmd', {
+            jdata: JSON.stringify(cmd)
+        }, function (res) {
+            callback(res);
+        });
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    function SaveCfg(tag_value) {
+        let data = CollectAPIValues(tag_value);
+        console.log('saveCfg call (' + tag_value + ')', data);
+        TransportSetCfg(data, function (res) {
+            let list = undefined;
+            let error = false;
+            try {
+                console.log("answer: " + res);
+                if (res != "")
+                    list = JSON.parse(res).wrong_values;
+            } catch {
+                error = true;
+            }
+            // либо лист будет пустым, либо undefined, либо ошибка парсинга (error == true)
+            if (list != undefined) {
+                ResetBackgroundOfWrongFields(tag_value);
+                list.forEach(api => {
+                    //console.log('wrong: ' + api);
+                    let control = document.querySelector('[api="' + api + '"]');
+                    if (control != undefined || control != null) {
+                        control.style.backgroundColor = "#f7b4b0";
+                    }
+                });
+            }
+            alert(list != undefined && list.length == 0 ? 'сохранено' : "ошибка");
+            if (tag_value == "config_sys" && list != undefined && list.length == 0) { // func map saved 
+                outs_func_map = data.outsfn;
+                console.log("func map set to", outs_func_map);
+            }
+        });
+    }
+
+
+    function ResetBackgroundOfWrongFields(tag_value) {
+        let components = document.querySelectorAll('[tag="' + tag_value + '"]');
+        console.log("Reset backgrounds", tag_value, components);
+        for (let i = 0; i < components.length; i++) {
+            if (components[i] != undefined) {
+                components[i].style.backgroundColor = "white";
+            }
+        }
+    }
+
+    function SetDefaultViewValues(tag_value) {
+        let root = JSON.parse(default_views_values[tag_value]);
+        UpdateApiView(tag_value, root);
+    }
+
+    function ShowHelp(tag_value) {
+        alert(help_str[tag_value]);
+    }
+
+    var timer_offline = 0;
+
+    function setOfflinePageState() {
+        page_cap.style.backgroundColor = "red";
+        timer_offline = 0;
+    }
+
+    function setOnlinePageState() {
+        var page_cap = document.getElementById("page_cap");
+        page_cap.style.backgroundColor = "lime";
+    }
+
+
+
+
+    /**
+     * Window Load
+     */
+
+
+
+    let lastUpdatedUptime = 0;
+    let uptimeLowerCounter = 0;
+
+    function GetAndUpdateState() {
+        TransportGetState(function (res) {
+            // try {
+            if (res != "" && res != undefined && res != "{}" && res != null) {
+                var response = JSON.parse(res);
+                //console.log("accepted /state & parsed", response);
+                if (response.uptime > lastUpdatedUptime) {
+                    UpdateApiView("watch", response);
+                    // console.log("view updated");
+                    lastUpdatedUptime = response.uptime;
+                    uptimeLowerCounter = 0;
+                } else {
+                    uptimeLowerCounter++;
+                    if (uptimeLowerCounter > 5) {
+                        lastUpdatedUptime = response.uptime;
+                        UpdateApiView("watch", response);
+                    }
+                }
+                //console.log("set online state");
+                setOnlinePageState();
+                if (timer_offline !== 0) {
+                    window.clearTimeout(timer_offline);
+                    timer_offline = 0;
+                }
+
+                timer_offline = window.setTimeout(function () {
+                    setOfflinePageState();
+                }, 5000);
+            }
+            // } catch {
+            //     console.log("can't parse empty state");
+            // }
+        });
+    }
+
+    function GetAngUpdateConfig() {
+        TransportGetCfg(function (res) {
+            try {
+                //console.log("cfg:", res);
+                var response = JSON.parse(res);
+                //console.log("cfg parsed", response);
+                UpdateApiView("config_main", response);
+                UpdateApiView("config_clim", response);
+                UpdateApiView("config_cal", response);
+                UpdateApiView("config_sys", response);
+                if (response.outsfn) {
+                    outs_func_map = response.outsfn;
+                    console.log("func map set to", outs_func_map);
+                }
+                UpdateApiView("config_timers", response);
+
+            } catch {
+                console.log("can't parse empty config");
+            }
+        });
+    }
+
+    window.onload = function () {
+        //window.scrollTo(0, 0);
+        /*UpdateApiView("watch", JSON.parse(state_json));
+        UpdateApiView("config_main", JSON.parse(cfg_json));
+        UpdateApiView("config_cal", JSON.parse(cfg_json));
+        console.log(JSON.stringify(CollectAPIValues("config_main")));
+        console.log(JSON.stringify(CollectAPIValues("config_cal")));*/
+
+        InitOutsFuncsArea("outsfuncs", out_functions_list, 9);
+        /*let tim1 = new TimerConfigComponent(document.getElementById("timer1"), function() {
+            console.log("tim changed", tim1.GetState());
+        }, "свет", "123", "456", 3);
+        tim1.SetState({
+            m: 3,
+            data: {
+                table: [{
+                    t1: 25200,
+                    t2: 54000
+                }]
+            }
+        });*/
+        let timers = new TimersConfigComponent(document.getElementById("timers"), () => {
+            console.log("timers onchange");
+        }, 8);
+
+        let outputs_ctrl = new OutputsControllerComponent(document.getElementById("outs_ctrl_table"), () => {
+            console.log("outs ctrl event");
+        }, 9);
+
+        //        tim1.Redraw();
+
+        setOfflinePageState();
+        GetAngUpdateConfig();
+        setInterval(function () {
+            if (flagUpdateCfg) {
+                flagUpdateCfg = 0;
+                GetAngUpdateConfig();
+            }
+            GetAndUpdateState();
+        }, 1000);
+    };
+
+
+
+
+    ////////////////////////////////////////////////////// 
+
+    var flagUpdateCfg = 0;
+
+    function UpdateElemValueByApiTag(api, val, block_formatter = false) {
+        var viewers = document.querySelectorAll('[api="' + api + '"]');
+        for (var k = 0; k < viewers.length; k++) { //for each viewer  
+            var control = viewers[k];
+            var formatter = control.getAttribute("formatter");
+            var postfix = control.getAttribute("postfix");
+            var res = val;
+            if (formatter == undefined) {
+                formatter = control.formatter;
+            }
+            if (formatter != undefined && !block_formatter) {
+                if (typeof formatter === "function") {
+                    //console.log("formatter - func");
+                    res = formatter(res, control);
+                } else if (typeof formatter === "string") {
+                    res = window[formatter](res, control);
+                } else {
+                    console.log("unknown typeof formatter");
+                }
+            }
+            if (res != null) {
+                if (postfix != undefined) res += postfix; //                console.log("try set" + res + ", elem=" + api);
+                switch (control.tagName) {
+                    case "SELECT":
+                    case "INPUT":
+                    case "TEXTAREA":
+                        if (control.getAttribute("type") == "checkbox") {
+                            control.checked = res;
+                        } else
+                            control.value = res;
+                        break;
+                    case "DIV":
+                    case "TD":
+                    case "DATALIST":
+                    case "LABEL":
+                    case "B":
+                        control.innerHTML = res;
+                        break;
+                }
+            }
+        }
+    }
+
+    function UpdateApiView(tagValue, data_root) {
+        // можно оптимизировать, если найти сразу все элементы с идентичными val_addr
+        var components = document.querySelectorAll('[tag="' + tagValue + '"]');
+        for (var i = 0; i < components.length; i++) {
+            if (components[i] != undefined) {
+                let val_addr = components[i].getAttribute("api"); // values[1]/v
+                let addr_parts = val_addr.split('/');
+                let p = data_root;
+                //console.log("i ==", i, ", val_addr ==", val_addr);
+                addr_parts.forEach(part => { // values[1], v
+                    let subparts = part.split('['); // values, 1]
+                    subparts.forEach(subpart => { // part делю на части по [ со включением, для каждой из частей "углубляюсь" в p; для [] углубление может выглядеть иначе;  
+                        if (subpart[subpart.length - 1] == ']') {
+                            subpart = subpart.substr(0, subpart.length - 1);
+                        }
+                        //console.log("dig into ", p, subpart);
+                        if (p == undefined) {
+                            console.log("[Error] UpdateApiView, tagValue ==", tagValue, ", data_root ==", data_root);
+                            console.log("i ==", i, ", val_addr ==", val_addr);
+                            console.log("dig into ", p, subpart);
+                            return;
+                        }
+                        p = p[subpart];
+                    });
+                }); // p указывает на нужное значение 
+                UpdateElemValueByApiTag(val_addr, p);
+            }
+        }
+    }
+
+    function GrabElemValueByApiTag(api) {
+        var control = document.querySelector('[api="' + api + '"]'); //console.log(api + add_part);
+        var value = null;
+        switch (control.tagName) { // grab value from component 
+            case "SELECT":
+            case "DIV":
+            case "INPUT":
+            case "TEXTAREA":
+                value = (control.getAttribute("type") == "checkbox") ? (control.checked ? 1 : 0) : control.value;
+                break;
+            case "TD":
+            case "DATALIST":
+            case "LABEL":
+            case "B":
+                value = control.innerHTML;
+        }
+        var encoder = control.getAttribute("encoder"); //console.log("viewer:"+ api +""+ k);
+        if (encoder == undefined) {
+            encoder = control.encoder;
+        }
+        var r = value;
+        try { // if has"encoder"field => encode data to backend format; if result == null => alert error and restore old value 
+            if (encoder != undefined) {
+                if (typeof encoder === "function") {
+                    console.log("encoder - func");
+                    r = encoder(value, control);
+                } else if (typeof encoder === "string") {
+                    r = window[encoder](value, control); //console.log("has formatter:"+ formatter +"arg="+ JSON.stringify(p));
+                } else {
+                    console.log("unknown typeof encoder");
+                }
+            }
+        } catch {
+            console.log("encoder error:" + api);
+        }
+        if (r == null) {
+            console.log("Ошибка ввода для " + api + ", null не является корректным значением");
+        }
+        //console.log("api:" + api + ":" + r);
+        return r;
+    }
+
+    function CollectAPIValues(tagValue) {
+        var res = {};
+        var components = document.querySelectorAll('[tag="' + tagValue + '"]');
+        for (var i = 0; i < components.length; i++) {
+            if (components[i] != undefined) {
+                let val_addr = components[i].getAttribute("api"); // values[1]/v
+                let value = GrabElemValueByApiTag(val_addr); // место оптимизации
+                let addr_parts = val_addr.split('/');
+                let p = res;
+                for (let k = 0; k < addr_parts.length; k++) { //values[1], v
+                    let part = addr_parts[k];
+                    let subparts = part.split('['); // values, 1]
+                    for (let j = 0; j < subparts.length; j++) { // part делю на части по [ со включением, для каждой из частей "углубляюсь" в p; для [] углубление может выглядеть иначе;  
+                        let subpart = subparts[j];
+                        if (subpart[subpart.length - 1] == ']') { // 1
+                            subpart = subpart.substr(0, subpart.length - 1);
+                        }
+                        if (p[subpart] == undefined) {
+                            p[subpart] = (j == subparts.length - 1) ? (k == addr_parts.length - 1 ? value : {}) : [];
+                        }
+                        p = p[subpart];
+                    }
+                } // p указывает на нужное значение 
+            }
+        }
+
+        return res;
+
+        /*api_list = api_points[tagValue];
+        for (var i = 0; i < api_list.length; i++) { // для каждой API-точки 
+            var api = api_list[i].api;
+            for (var j = 0; j < api_list[i].elements.length; j++) { // для каждого"постфикса"API-точки ("","[0/10]","[5/12]"и тд)
+                var add_part = api_list[i].elements[j];
+                //var control = document.querySelector('[api="' + api + add_part + '"]'); //console.log(api + add_part);
+                var r = GrabElemValueByApiTag(api + add_part);
+
+                var addr = api.split("/");
+                var p = res;
+                for (var k = 0; k < addr.length - 1; k++) {
+                    if (p[addr[k]] == undefined)
+                        p[addr[k]] = {};
+                    p = p[addr[k]];
+                }
+
+                if (add_part != "") { //parse add_part  // something like"[6/12]"
+                    var index = add_part.substr(1, add_part.indexOf('/') - 1);
+                    var size = add_part.substr(add_part.indexOf('/') + 1, add_part.indexOf(']') - add_part.indexOf('/') - 1);
+                    if (p[addr[addr.length - 1]] == undefined) p[addr[addr.length - 1]] = [];
+                    if (p[addr[addr.length - 1]][size - 1] == undefined && index != size - 1) p[addr[addr.length - 1]][size - 1] = null;
+                    p[addr[addr.length - 1]][index] = r;
+                } else p[addr[addr.length - 1]] = r;
+            }
+        }
+        return res;*/
+    }
+
+
+
+
+    /* function GrabConfigElementValue(api_array) {
+         var res = {};
+         for (var i = 0; i < api_array.length; i++) { // для каждой API-точки 
+             var api = api_array[i].substr(0, api_array[i].indexOf('[')); // string before '[' 
+             var add_part = (api != "") ? api_array[i].substr(api_array[i].indexOf('[')) : ""; // [0/12], at example
+             api = (api == "") ? api_array[i] : api;
+             //console.log("api:"+ api + add_part);
+
+             try {
+                 var value = GrabElemValueByApiTag(api + add_part);
+             } catch {
+                 console.log("GrabConfigElementValue," + api + add_part);
+                 continue;
+             }
+             if (value == null) continue;
+             var addr = api.split("/");
+             var p = res;
+             for (var k = 0; k < addr.length - 1; k++) {
+                 if (p[addr[k]] == undefined)
+                     p[addr[k]] = {};
+                 p = p[addr[k]];
+             }
+
+             if (add_part != "") { //parse add_part  // something like"[6/12]"
+                 var index = add_part.substr(1, add_part.indexOf('/') - 1);
+                 var size = add_part.substr(add_part.indexOf('/') + 1, add_part.indexOf(']') - add_part.indexOf('/') - 1);
+                 if (p[addr[addr.length - 1]] == undefined) p[addr[addr.length - 1]] = [];
+                 if (p[addr[addr.length - 1]][size - 1] == undefined && index != size - 1) p[addr[addr.length - 1]][size - 1] = null;
+                 p[addr[addr.length - 1]][index] = value;
+             } else p[addr[addr.length - 1]] = value;
+
+         }
+         return res;
+     }*/
+
+
+
+
+    var ajax = {};
+    ajax.x = function () {
+        if (typeof XMLHttpRequest !== 'undefined') {
+            return new XMLHttpRequest();
+        }
+        var versions = [
+            "MSXML2.XmlHttp.6.0",
+            "MSXML2.XmlHttp.5.0",
+            "MSXML2.XmlHttp.4.0",
+            "MSXML2.XmlHttp.3.0",
+            "MSXML2.XmlHttp.2.0",
+            "Microsoft.XmlHttp"
+        ];
+
+        var xhr;
+        for (var i = 0; i < versions.length; i++) {
+            try {
+                xhr = new ActiveXObject(versions[i]);
+                break;
+            } catch (e) { }
+        }
+        return xhr;
+    };
+
+    ajax.send = function (url, callback, method, data, async) {
+        if (async === undefined) {
+            async = true;
+        }
+        var x = ajax.x();
+        x.open(method, url, async);
+        x.onreadystatechange = function () {
+            if (x.readyState == 4) {
+                callback(x.responseText)
+            }
+        };
+        if (method == 'POST') {
+            x.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+        }
+        x.send(data)
+    };
+
+    ajax.get = function (url, data, callback, async) {
+        var query = [];
+        for (var key in data) {
+            query.push(encodeURIComponent(key) + '=' + encodeURIComponent(data[key]));
+        }
+        ajax.send(url + (query.length ? '?' + query.join('&') : ''), callback, 'GET', null, async)
+    };
+
+    ajax.post = function (url, data, callback, async) {
+        var query = [];
+        for (var key in data) {
+            query.push(encodeURIComponent(key) + '=' + encodeURIComponent(data[key]));
+        }
+        ajax.send(url, callback, 'POST', query.join('&'), async)
+    };
+</script>
+</body></html>

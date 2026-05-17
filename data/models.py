@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 """
 Настройки таймеров
@@ -102,3 +102,62 @@ class Config(BaseModel):
     env: Env | None = None
     clim: Clim | None = None
     nsolution: NSolution | None = None
+
+
+"""
+
+"""
+
+
+class SensorValue(BaseModel):
+    r: float = Field(..., description="Сырое значение с датчика (raw)")
+    t: int = Field(..., description="Тип датчика / идентификатор параметра")
+    v: float | None = Field(
+        None, description="Валидированное / отфильтрованное значение"
+    )
+    e: int | None = Field(None, description="Код ошибки или статус (если применимо)")
+
+
+class Outputs(BaseModel):
+    sum_on_s: list[float] = Field(
+        ..., description="Суммарное время включения выходов в секундах"
+    )
+    func_cntdn_s: list[float] = Field(
+        ..., description="Обратный отсчет таймеров функций в секундах"
+    )
+    ovrrd_time: list[float] = Field(
+        ..., description="Время принудительного переопределения (override)"
+    )
+    ovrrd_state: list[int] = Field(
+        ..., description="Состояние принудительного переопределения"
+    )
+
+
+class State(BaseModel):
+    ver: str
+    values: list[SensorValue] = Field(..., description="Массив показаний датчиков")
+    raw_ec_msm: float = Field(
+        ..., description="Сырые измерения электропроводимости (EC)"
+    )
+    cfghsh: int = Field(..., description="Хеш-сумма конфигурации (config hash)")
+    uptime: int = Field(
+        ..., description="Время непрерывной работы устройства (аптайм) в секундах"
+    )
+    time: int = Field(..., description="Текущее системное время устройства / эпоха")
+    frhp: int = Field(..., description="Свободная память кучи (Free Heap)")
+    maxahp: int = Field(
+        ..., description="Максимальный аллоцируемый блок кучи (Max Alloc Heap)"
+    )
+    mfrhp: int = Field(
+        ..., description="Минимальный зафиксированный уровень свободной памяти"
+    )
+    hpsz: int = Field(..., description="Общий размер кучи (Heap Size)")
+    wifi: int = Field(..., description="Статус или уровень сигнала Wi-Fi")
+    ofuc: int = Field(..., description="Счетчик сбоев или переполнений")
+    description: str = Field(
+        ..., description="Текстовый лог текущих процессов и ошибок"
+    )
+    outs: Outputs = Field(
+        ..., description="Объект состояния исполнительных устройств (выходов)"
+    )
+    errors: list[str] | None = Field(None)

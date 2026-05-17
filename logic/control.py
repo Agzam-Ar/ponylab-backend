@@ -70,12 +70,12 @@ class Controller:
         _bars = 24 * 2
         _bar_scl = 86400 // _bars
         _bar = ["─"] * _bars
-        _bar[state.time // _bar_scl] = (
+        _bar[(state.time // _bar_scl) % _bars] = (
             Fore.LIGHTYELLOW_EX if is_day else Fore.LIGHTBLACK_EX
         ) + "⬤"
 
-        _bar[light_begin // _bar_scl - 1] += Fore.LIGHTYELLOW_EX
-        _bar[light_end // _bar_scl - 1] += Fore.LIGHTBLACK_EX
+        _bar[(light_begin // _bar_scl - 1) % _bars] += Fore.LIGHTYELLOW_EX
+        _bar[(light_end // _bar_scl - 1) % _bars] += Fore.LIGHTBLACK_EX
 
         print(
             f"Цикл:  {Fore.LIGHTBLACK_EX}{''.join(_bar)} {Fore.RESET}{state.time // 3600:02}:{state.time // 60 % 60:02}"

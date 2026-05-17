@@ -3,9 +3,11 @@ from asyncio.tasks import Task
 import os
 import sys
 from pathlib import Path
-import traceback
 from typing import Never
 
+
+from logs.trace import error
+from server.proxy import proxy
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -18,6 +20,7 @@ from camera.capture import Camera
 from data.yieldizer import fetch_state
 from logic.control import Controller
 from logs.plant_log import PlantLog
+
 
 REFRESH_TIME = int(os.getenv("REFRESH_TIME", 60 * 10))
 PLANT_TYPE = os.getenv("PLANT_TYPE", "tomato")
@@ -70,6 +73,8 @@ class GreenhouseServer:
             self.plant_log.state_snapshot(state)
 
             result = await asyncio.to_thread(analyze, image, state)
+            if result is None:
+                return
             self.plant_log.analysis_snapshot(result)
 
             # LOGIC модуль: корректирует и отправляет параметры в теплицу
@@ -77,8 +82,8 @@ class GreenhouseServer:
 
             self._analysis_cache = result
         except Exception as e:
+            error(e)
             print(f"[Server] Analysis error: {e}")
-            traceback.print_exc()
             self._analysis_cache = None
 
     def get_logs(self):
@@ -115,6 +120,7 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+app.include_router(proxy)
 
 
 @app.get("/api/sensors")

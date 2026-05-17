@@ -4,4 +4,15 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "pretty-errors>=1.2.25",
+    "fastapi>=0.109.0",
+    "uvicorn>=0.27.0",
+    "httpx>=0.26.0",
+    "picamera2>=0.3.0",
+    "python-dotenv>=1.0.0",
+    "Pillow>=10.0.0",
+    "openai>=1.12.0",
+    "colorama>=0.4.6",
+    "python-multipart>=0.0.28",
+]

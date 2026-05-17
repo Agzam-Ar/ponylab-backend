@@ -2,16 +2,15 @@ import json
 import base64
 import math
 import time
-import traceback
 from colorama import Fore
 import httpx
 import os
 from dataclasses import dataclass
-from openai import OpenAI
+from openai import APIConnectionError, OpenAI
 
 from data.yieldizer import GreenhouseState
 from logic.rules import PlantParms, auto_type
-
+from logs.trace import error
 
 LLM_BASE_URL = os.getenv("LLM_BASE_URL", "http://127.0.0.1:11435/v1")
 LLM_API_KEY = os.getenv("LLM_API_KEY", "sk-no-key-required")
@@ -42,7 +41,7 @@ def calculate_vpd(temp: float, humidity: float):
     return svp - avp
 
 
-def analyze(image_bytes: bytes, state: GreenhouseState) -> AnalysisResult:
+def analyze(image_bytes: bytes, state: GreenhouseState):
     import server.config
 
     Config = server.config.Config
@@ -124,38 +123,38 @@ def analyze(image_bytes: bytes, state: GreenhouseState) -> AnalysisResult:
             action_summary="нет",
         )
 
-    log(f"Сервер llm: {Fore.LIGHTCYAN_EX}{LLM_BASE_URL}{Fore.RESET}")
-    client = OpenAI(
-        base_url=LLM_BASE_URL, api_key=LLM_API_KEY, timeout=httpx.Timeout(None)
-    )
-
-    b64 = encode_image(image_bytes)
-    # user_prompt = f"""Данные датчиков: {state.model_dump_json()}\nПроанализируй растение на фото."""
-    log(f"=== Системный промпт ===\n{Fore.WHITE}{SYSTEM_PROMPT}{Fore.RESET}\n===")
-    log(f"=== Промпт ===\n{Fore.WHITE}{user_prompt}{Fore.RESET}\n===")
-    _start = time.perf_counter()
-    response = client.chat.completions.create(
-        model="local-model",
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": user_prompt},
-                    {
-                        "type": "image_url",
-                        "image_url": {"url": f"data:image/jpeg;base64,{b64}"},
-                    },
-                ],
-            },
-        ],
-        response_format={"type": "json_object"},
-        temperature=0,
-    )
-    log(
-        f"{Fore.LIGHTGREEN_EX}Response ready!{Fore.RESET} ({int(time.perf_counter() - _start)}s)"
-    )
     try:
+        log(f"Сервер llm: {Fore.LIGHTCYAN_EX}{LLM_BASE_URL}{Fore.RESET}")
+        client = OpenAI(
+            base_url=LLM_BASE_URL, api_key=LLM_API_KEY, timeout=httpx.Timeout(None)
+        )
+
+        b64 = encode_image(image_bytes)
+        # user_prompt = f"""Данные датчиков: {state.model_dump_json()}\nПроанализируй растение на фото."""
+        log(f"=== Системный промпт ===\n{Fore.WHITE}{SYSTEM_PROMPT}{Fore.RESET}\n===")
+        log(f"=== Промпт ===\n{Fore.WHITE}{user_prompt}{Fore.RESET}\n===")
+        _start = time.perf_counter()
+        response = client.chat.completions.create(
+            model="local-model",
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": user_prompt},
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": f"data:image/jpeg;base64,{b64}"},
+                        },
+                    ],
+                },
+            ],
+            response_format={"type": "json_object"},
+            temperature=0,
+        )
+        log(
+            f"{Fore.LIGHTGREEN_EX}Response ready!{Fore.RESET} ({int(time.perf_counter() - _start)}s)"
+        )
         data = json.loads(response.choices[0].message.content or "")  # pyright: ignore[reportAny]
         log(
             f"=== Данные ===\n{Fore.LIGHTGREEN_EX}{json.dumps(data, indent=4, ensure_ascii=False)}{Fore.RESET}\n==="
@@ -174,7 +173,9 @@ def analyze(image_bytes: bytes, state: GreenhouseState) -> AnalysisResult:
             rationale=data.get("rationale", ""),  # pyright: ignore[reportAny]
             action_summary=data.get("action_summary", ""),  # pyright: ignore[reportAny]
         )
+    except APIConnectionError as e:
+        print("LLM сервер не отвечает")
     except Exception as e:
         print(f"An error occurred: {e}")
-        traceback.print_exc()
+        error(e)
         raise RuntimeError(f"error: {e}")

@@ -1,0 +1,105 @@
+{
+  "env": {
+    "timers": [
+      {
+        "m": 3,
+        "data": {
+          "dbegin": 0,
+          "dskip": 0,
+          "table": [
+            {
+              "t1": 0,
+              "t2": 25200
+            },
+            {
+              "t1": 82800,
+              "t2": 3600
+            }
+          ]
+        }
+      },
+      {
+        "m": 2,
+        "data": {
+          "t1": 15,
+          "t2": 7185
+        }
+      }
+    ]
+  },
+  "clim": {
+    "air_cooler": {
+      "thr_on": 26.0,
+      "thr_off": 22.0,
+      "t_on_min": 3.0,
+      "t_on_max": 30.0,
+      "t_pause": 5.0
+    },
+    "dehumidifier": {
+      "thr_on": 67.0,
+      "thr_off": 63.0,
+      "t_on_min": 6.0,
+      "t_on_max": 60.0,
+      "t_pause": 3.0
+    },
+    "extractor_t": {
+      "thr_on": 26.0,
+      "thr_off": 22.0,
+      "t_on_min": 3.0,
+      "t_on_max": 30.0,
+      "t_pause": 5.0
+    },
+    "extractor_h": {
+      "thr_on": 67.0,
+      "thr_off": 63.0,
+      "t_on_min": 0.5,
+      "t_on_max": 10.0,
+      "t_pause": 0.5
+    },
+    "humidifier": {
+      "thr_on": 63.0,
+      "thr_off": 67.0,
+      "t_on_min": 0.5,
+      "t_on_max": 10.0,
+      "t_pause": 0.5
+    },
+    "co2": {
+      "thr_on": 900.0,
+      "thr_off": 1100.0,
+      "t_on_min": 3.0,
+      "t_on_max": 10.0,
+      "t_pause": 3.0
+    },
+    "heater": {
+      "thr_on": 22.0,
+      "thr_off": 26.0,
+      "t_on_min": 1.0,
+      "t_on_max": 20.0,
+      "t_pause": 2.0
+    }
+  },
+  "nsolution": {
+    "mixing_time_min": 0,
+    "ph_down_trig": 6.3,
+    "pump_ph_down_quant_s": 0.5,
+    "ph_up_trig": 5.7,
+    "pump_ph_up_quant_s": 0.5,
+    "ec_down_trig_msm": 1.9000000000000001,
+    "pump_ec_down_quant_s": 10.0,
+    "ec_up_trig_msm": 1.7,
+    "pump_ec_up_quant_s": 10.0,
+    "b_koeff": 1.1,
+    "c_koeff": 0.0,
+    "pump_water_lvl_quant_s": 10.0,
+    "lvl_ignore_time_min": 1,
+    "lvl_run_delay_min": 0,
+    "lvl_off_delay_min": 0,
+    "temp_ctrl_on_temp": 21.0,
+    "temp_ctrl_off_temp": 19.0,
+    "temp_ctrl_time_on_above_min": 3,
+    "temp_ctrl_time_on_below_min": 10,
+    "temp_ctrl_time_off_above_min": 5,
+    "ph_protection_delta": 0.4,
+    "ec_protection_percent": 15.0
+  }
+}
