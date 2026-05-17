@@ -1,9 +1,7 @@
 import asyncio
 from contextlib import asynccontextmanager
 from enum import Enum
-from operator import index
 import os
-import time
 from typing import Callable, override
 
 from fastapi import APIRouter, Form, HTTPException
@@ -34,10 +32,14 @@ class FuncController(BaseModel):
     name: str = "неизвестно"
 
     delta: dict[Sensors, float] = {}
+    delta_off: dict[Sensors, float] = {}
 
-    def step(self, config: Config, state: State, out: int):
+    def step(self, _config: Config, state: State, out: int):
         if state.outs.sum_on_s[out] > 0:  # Если включен
             self.apply(state)
+
+    def get_sum(self, state: State, out: int):
+        return state.outs.sum_on_s[out]
 
     def set_sum(self, state: State, out: int, sec: float):
         state.outs.sum_on_s[out] = sec
@@ -56,12 +58,13 @@ class FuncController(BaseModel):
         pass
 
     def apply(self, state: State):
-        # if isinstance(self.delta, float):
-        #     sv = state.values[self.sensor.value]
-        #     if sv.v:
-        #         sv.v += self.delta * 10
-        # if isinstance(self.delta, dict):
         for sensor, d in self.delta.items():
+            sv = state.values[sensor.value]
+            if sv.v:
+                sv.v += d * 10
+
+    def apply_off(self, state: State):
+        for sensor, d in self.delta_off.items():
             sv = state.values[sensor.value]
             if sv.v:
                 sv.v += d * 10
@@ -75,15 +78,21 @@ class ClimateController(FuncController):
 
     @override
     def step(self, config: Config, state: State, out: int):
+        sum = self.get_sum(state, out)
         if config.clim is not None:
             c = self.control(config.clim)
             value = self.sensor.from_state(state)
-            if (
-                c.under(value) and state.outs.sum_on_s[out] < 1
-            ):  # Под диапозоном - включаем
-                self.set_time(state, out, c.t_on_min * 60)
-                self.set_desc(state, c.t_on_min * 60)
-        super().step(config, state, out)
+            if c.under(value) and sum < 1:  # Под диапозоном - включаем
+                sum = c.t_on_min * 60
+
+        if sum > 0:
+            sum -= 1
+            self.apply(state)
+            self.set_desc(state, sum)
+        else:
+            self.apply_off(state)
+
+        self.set_time(state, out, sum)
 
 
 class TimersController(FuncController):
@@ -105,6 +114,7 @@ class TimersController(FuncController):
                 elif self._pause > 0:
                     self._pause -= 1
                     self.set_desc(state, -self._pause)
+                    self.apply_off(state)
                 else:
                     self._time = 0 if t.data.t1 is None else t.data.t1
                     self._pause = 0 if t.data.t2 is None else t.data.t2
@@ -123,8 +133,7 @@ class TimersController(FuncController):
 
                 if pause > 0:
                     self.set_desc(state, -pause)
-
-        super().step(config, state, out)
+                    self.apply_off(state)
 
 
 class OutFunc(Enum):
@@ -195,10 +204,19 @@ class OutFunc(Enum):
         delta={Sensors.CO2: 1.5},  # подача газа повышает уровень на +1.5 ppm в секунду
     )
     LIGHT = TimersController(
-        index=13, name="свет", timer=0, delta={Sensors.LIGHT: 5000}
+        index=13,
+        name="свет",
+        timer=0,
+        delta_off={
+            Sensors.LIGHT: 5000.0,  # мгновенный приток освещенности (в люксах)
+            Sensors.TEMP_AIR: 0.005,  # побочный нагрев воздуха от ламп (0.3°C в минуту)
+        },
     )
     WATERING = TimersController(
-        index=14, name="полив", timer=1, delta={Sensors.HUMIDITY_AIR: 0.1}
+        index=14,
+        name="полив",
+        timer=1,
+        delta={},
     )
     TIMER_1 = 15  # таймер 1
     TIMER_2 = 16  # таймер 2
@@ -222,16 +240,18 @@ def step():
     state.uptime += 1
     state.time = (state.time + 1) % 86400
 
+    state.values[Sensors.LIGHT.value].v = 0
+
     # TODO: other parms
 
     # Климат
-    for index in range(len(state.outs.func_cntdn_s)):
-        if state.outs.func_cntdn_s[index] > 0:
-            state.outs.func_cntdn_s[index] -= 1
+    # for index in range(len(state.outs.func_cntdn_s)):
+    #     if state.outs.func_cntdn_s[index] > 0:
+    #         state.outs.func_cntdn_s[index] -= 1
 
     for index in range(len(state.outs.sum_on_s)):
-        if state.outs.sum_on_s[index] > 0:
-            state.outs.sum_on_s[index] -= 1
+        # if state.outs.sum_on_s[index] > 0:
+        #     state.outs.sum_on_s[index] -= 1
 
         if config.outsfn:
             fid = config.outsfn[index]
