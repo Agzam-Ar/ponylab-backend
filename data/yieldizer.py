@@ -3,9 +3,18 @@ from typing import Any
 from urllib.parse import urlparse
 
 import httpx
-from pydantic import BaseModel
 
-from data.models import Clim, Config, Env, NSolution, State, Timer
+from data.models import (
+    Clim,
+    Config,
+    Env,
+    GreenhouseState,
+    NSolution,
+    SensorValues,
+    Sensors,
+    State,
+    Timer,
+)
 
 BASE_URL = os.getenv("YIELDIZER_URL", "http://127.0.0.1:3001")
 
@@ -27,53 +36,33 @@ def _get_urls(base_url: str) -> list[str]:
 URLS = _get_urls(BASE_URL)
 
 
-class SensorValues(BaseModel):
-    ph: float
-    ec: float
-    temp_solution: float
-    level: str
-    temp_air: float
-    humidity_air: float
-    co2: float
-    light: float
+def fetch_value(values: list[Any], index: int, default: str | float):  # pyright: ignore[reportExplicitAny]
+    if index < len(values) and "v" in values[index]:
+        return values[index]["v"]  # pyright: ignore[reportAny]
+    return default
 
 
-class GreenhouseState(BaseModel):
-    values: SensorValues
-    description: str
-    uptime: int
-    time: int
-    wifi: int
-    errors: list[str]
+def from_api(state: State):
+    return GreenhouseState(
+        values=SensorValues(
+            ph=Sensors.PH.from_state(state),
+            ec=Sensors.EC.from_state(state),
+            temp_solution=Sensors.TEMP_SOLUTION.from_state(state),
+            level=Sensors.LEVEL.from_state(state),
+            temp_air=Sensors.TEMP_AIR.from_state(state),
+            humidity_air=Sensors.HUMIDITY_AIR.from_state(state),
+            co2=Sensors.CO2.from_state(state),
+            light=Sensors.LIGHT.from_state(state),
+        ),
+        description=state.description,
+        uptime=state.uptime,
+        time=state.time,
+        wifi=state.wifi,
+        errors=state.errors or [],
+    )
 
 
 async def fetch_state() -> GreenhouseState:
-
-    def fetch_value(values: list[Any], index: int, default: str | float):  # pyright: ignore[reportExplicitAny]
-        if index < len(values) and "v" in values[index]:
-            return values[index]["v"]  # pyright: ignore[reportAny]
-        return default
-
-    def from_api(_state: State):
-        v = _state.values
-        return GreenhouseState(
-            values=SensorValues(
-                ph=float(fetch_value(v, 0, 0.0)),
-                ec=float(fetch_value(v, 1, 0.0)),
-                temp_solution=float(fetch_value(v, 2, 0.0)),
-                level=str(fetch_value(v, 3, "none")),
-                temp_air=float(fetch_value(v, 4, 0.0)),
-                humidity_air=float(fetch_value(v, 5, 0.0)),
-                co2=float(fetch_value(v, 6, 0.0)),
-                light=float(fetch_value(v, 7, 0.0)),
-            ),
-            description=_state.description,
-            uptime=_state.uptime,
-            time=_state.time,
-            wifi=_state.wifi,
-            errors=_state.errors or [],
-        )
-
     async with httpx.AsyncClient(timeout=10.0) as client:
         for base in URLS:
             for path in ["/state"]:

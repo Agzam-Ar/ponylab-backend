@@ -101,5 +101,16 @@
     "temp_ctrl_time_off_above_min": 5,
     "ph_protection_delta": 0.4,
     "ec_protection_percent": 15.0
-  }
+  },
+  "outsfn": [
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    254,
+    254,
+    254
+  ]
 }

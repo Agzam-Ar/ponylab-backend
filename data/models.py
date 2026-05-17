@@ -1,4 +1,26 @@
+from enum import Enum
 from pydantic import BaseModel, Field
+
+
+class SensorValues(BaseModel):
+    ph: float
+    ec: float
+    temp_solution: float
+    level: float
+    temp_air: float
+    humidity_air: float
+    co2: float
+    light: float
+
+
+class GreenhouseState(BaseModel):
+    values: SensorValues
+    description: str
+    uptime: int
+    time: int
+    wifi: int
+    errors: list[str]
+
 
 """
 Настройки таймеров
@@ -41,6 +63,18 @@ class ClimateControl(BaseModel):
     t_on_min: float
     t_on_max: float
     t_pause: float
+
+    def under(self, value: float):
+        # print(f"[{self.thr_on},{self.thr_off}]")
+        if self.up():
+            # print(f"{value} < {self.thr_on}")
+            return value < self.thr_on
+        # print(f"{value} > {self.thr_on}")
+        return value > self.thr_on
+
+    def up(self):
+        """Если оказывает возрастающее воздействие (например нагреватель дает "+" к температуре)"""
+        return self.thr_on < self.thr_off
 
 
 class Clim(BaseModel):
@@ -102,6 +136,7 @@ class Config(BaseModel):
     env: Env | None = None
     clim: Clim | None = None
     nsolution: NSolution | None = None
+    outsfn: list[int] | None = None
 
 
 """
@@ -161,3 +196,22 @@ class State(BaseModel):
         ..., description="Объект состояния исполнительных устройств (выходов)"
     )
     errors: list[str] | None = Field(None)
+
+
+class Sensors(Enum):
+    PH = 0
+    EC = 1
+    TEMP_SOLUTION = 2
+    LEVEL = 3
+    TEMP_AIR = 4
+    HUMIDITY_AIR = 5
+    CO2 = 6
+    LIGHT = 7
+
+    def from_state(self, state: State, default: float = 0.0):
+        if self.value < len(state.values):
+            value = state.values[self.value].v
+            if value is None:
+                return default
+            return value
+        return default
