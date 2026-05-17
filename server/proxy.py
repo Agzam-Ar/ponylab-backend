@@ -38,9 +38,10 @@ class ClimateController(BaseModel):
     def step(self, clim: Clim, state: State, out: int):
         c = self.control(clim)
         value = self.sensor.from_state(state)
-        if c.under(value):  # Под диапозоном - включаем
+        if c.under(value) and state.outs.sum_on_s[out] < 1:  # Под диапозоном - включаем
             state.outs.sum_on_s[out] = c.t_on_min * 60
-            # state.outs.func_cntdn_s[out] = c.t_on_min * 60
+            if config.outsfn:
+                state.outs.func_cntdn_s[config.outsfn[out]] = c.t_on_min * 60
 
         if state.outs.sum_on_s[out] > 0:  # Если включен
             if isinstance(self.delta, float):
@@ -142,6 +143,10 @@ def step():
     # TODO: other parms
 
     # Климат
+    for index in range(len(state.outs.func_cntdn_s)):
+        if state.outs.func_cntdn_s[index] > 0:
+            state.outs.func_cntdn_s[index] -= 1
+
     for index in range(len(state.outs.sum_on_s)):
         if state.outs.sum_on_s[index] > 0:
             state.outs.sum_on_s[index] -= 1
@@ -151,11 +156,6 @@ def step():
             func = OUT_FUNCS[fid]
             if func:
                 func.step(config.clim, state, index)
-
-    # if config.clim:
-    #     clim_step(config.clim.heater, values.temp_air, OutFunc.HEATER)
-    #     clim_step(config.clim.air_cooler, values.temp_air, OutFunc.AIR_CONDITIONER)
-    #     clim_step(config.clim.heater, values.temp_air, OutFunc.HEATER)
 
 
 def apply_cfg(cfg: Config):
