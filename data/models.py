@@ -139,6 +139,13 @@ class Config(BaseModel):
     outsfn: list[int] | None = None
 
 
+class Cmd(BaseModel):
+    type: str
+    num: int
+    state: int
+    time: int
+
+
 """
 
 """

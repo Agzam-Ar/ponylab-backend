@@ -1,17 +1,14 @@
 import asyncio
 from contextlib import asynccontextmanager
 from enum import Enum
-from math import fabs
-from operator import index
 import os
 import random
-from re import L
 from typing import Callable, override
 
-from fastapi import APIRouter, Form, HTTPException
+from fastapi import APIRouter, Form, HTTPException, Response
 from fastapi.responses import HTMLResponse, PlainTextResponse
 from pydantic import BaseModel
-from data.models import Clim, ClimateControl, Config, NSolution, Sensors, State
+from data.models import Clim, ClimateControl, Cmd, Config, Sensors, State
 from data.yieldizer import get, page
 from logs import trace
 from logs.trace import error
@@ -35,7 +32,7 @@ class FuncController(BaseModel):
     index: int
     name: str = "неизвестно"
 
-    delta: dict[Sensors, float] = {}
+    delta: dict[Sensors, float | Callable[[float], float]] = {}
     delta_off: dict[Sensors, float] = {}
 
     def step(self, _config: Config, state: State, out: int):
@@ -65,7 +62,10 @@ class FuncController(BaseModel):
         for sensor, d in self.delta.items():
             sv = state.values[sensor.value]
             if sv.v:
-                sv.v += d + max(-1, min(1, random.uniform(-d, d) * 0.15))
+                if isinstance(d, float):
+                    sv.v += d + max(-1, min(1, random.uniform(-d, d) * 0.15))
+                elif isinstance(d, Callable):
+                    sv.v = d(sv.v)
 
     def apply_off(self, state: State):
         for sensor, d in self.delta_off.items():
@@ -282,7 +282,11 @@ class OutFunc(Enum):
         index=14,
         name="полив",
         timer=1,
-        delta={},
+        delta={
+            # При поливе тратится раствор и разбавляется водой
+            Sensors.PH: lambda x: x * 0.99 + (7.5) * 0.01,
+            Sensors.EC: lambda x: x * 0.99 + (0.3) * 0.01,
+        },
     )
     TIMER_1 = 15  # таймер 1
     TIMER_2 = 16  # таймер 2
@@ -308,7 +312,9 @@ def step():
 
     Sensors.LIGHT.set(state, 37)
     Sensors.TEMP_AIR.add(
-        state, (Sensors.TEMP_SOLUTION.get(state) - Sensors.TEMP_AIR.get(state)) * 0.0005
+        state,
+        (Sensors.TEMP_SOLUTION.get(state) - Sensors.TEMP_AIR.get(state)) * 0.0005
+        - 0.00001,
     )
 
     # Раствор
@@ -320,7 +326,20 @@ def step():
             fid = config.outsfn[index]
             func = OUT_FUNCS[fid]
             if func:
+                if state.outs.ovrrd_time[index] > 0:
+                    if state.outs.ovrrd_state[index] == 1:
+                        func.apply(state)
+                    else:
+                        func.apply_off(state)
+                    state.outs.ovrrd_time[index] -= 1
+                    continue
                 func.step(config, state, index)
+
+
+def apply_cmd(cmd: Cmd):
+    if cmd.type == "out_ctrl":
+        state.outs.ovrrd_state[cmd.num] = cmd.state
+        state.outs.ovrrd_time[cmd.num] = cmd.time
 
 
 def apply_cfg(cfg: Config):
@@ -396,6 +415,16 @@ async def proxy_post_cfg(jdata: str = Form(...)):
         cfg = Config.model_validate_json(jdata)
         apply_cfg(cfg)
         return {"text": "ok", "wrong_values": []}
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=f"Ошибка: {e}")
+
+
+@proxy.post("/cmd")
+async def proxy_post_cfg(jdata: str = Form(...)):
+    try:
+        cmd = Cmd.model_validate_json(jdata)
+        apply_cmd(cmd)
+        return Response("ok", media_type="text/plain")
     except Exception as e:
         raise HTTPException(status_code=422, detail=f"Ошибка: {e}")
 
