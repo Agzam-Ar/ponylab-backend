@@ -1,13 +1,17 @@
 import asyncio
 from contextlib import asynccontextmanager
 from enum import Enum
+from math import fabs
+from operator import index
 import os
+import random
+from re import L
 from typing import Callable, override
 
 from fastapi import APIRouter, Form, HTTPException
 from fastapi.responses import HTMLResponse, PlainTextResponse
 from pydantic import BaseModel
-from data.models import Clim, ClimateControl, Config, Sensors, State
+from data.models import Clim, ClimateControl, Config, NSolution, Sensors, State
 from data.yieldizer import get, page
 from logs import trace
 from logs.trace import error
@@ -24,7 +28,7 @@ except Exception as e:
 
 
 FALLBACK_FILE = os.getenv("FALLBACK_FILE", "server/yieldizer.html")
-SPEED_SCALE = 1
+SPEED_SCALE = 10
 
 
 class FuncController(BaseModel):
@@ -61,29 +65,35 @@ class FuncController(BaseModel):
         for sensor, d in self.delta.items():
             sv = state.values[sensor.value]
             if sv.v:
-                sv.v += d * 10
+                sv.v += d + max(-1, min(1, random.uniform(-d, d) * 0.15))
 
     def apply_off(self, state: State):
         for sensor, d in self.delta_off.items():
             sv = state.values[sensor.value]
             if sv.v:
-                sv.v += d * 10
+                sv.v += d + max(-1, min(1, random.uniform(-d, d) * 0.15))
 
 
-class ClimateController(FuncController):
-    """Enum для outsfn из Config"""
-
-    control: Callable[[Clim], ClimateControl]
+class LimitsController(FuncController):
     sensor: Sensors
+
+    def border_on(self, _config: Config):
+        return 0.0
+
+    def border_off(self, _config: Config):
+        return 0.0
+
+    def time_min(self, _config: Config):
+        return 0.0
 
     @override
     def step(self, config: Config, state: State, out: int):
         sum = self.get_sum(state, out)
-        if config.clim is not None:
-            c = self.control(config.clim)
-            value = self.sensor.from_state(state)
-            if c.under(value) and sum < 1:  # Под диапозоном - включаем
-                sum = c.t_on_min * 60
+
+        if sum < 1 and self.under(
+            self.sensor.get(state), self.border_on(config), self.border_off(config)
+        ):  # Под диапозоном - включаем
+            sum = self.time_min(config) * 60
 
         if sum > 0:
             sum -= 1
@@ -93,6 +103,51 @@ class ClimateController(FuncController):
             self.apply_off(state)
 
         self.set_time(state, out, sum)
+
+    def under(self, value: float, a: float, b: float):
+        if a < b:
+            return value < a
+        return value > b
+
+
+class ClimateLimitsController(LimitsController):
+    control: Callable[[Clim], ClimateControl]
+
+    @override
+    def border_on(self, config: Config):
+        if config.clim is None:
+            return 0.0
+        return self.control(config.clim).thr_on
+
+    @override
+    def border_off(self, config: Config):
+        if config.clim is None:
+            return 0.0
+        return self.control(config.clim).thr_off
+
+    @override
+    def time_min(self, config: Config):
+        if config.clim is None:
+            return 0.0
+        return self.control(config.clim).t_on_min
+
+
+class ChillerLimitsController(LimitsController):
+    @override
+    def border_on(self, _config: Config):
+        return 0.0 if config.nsolution is None else config.nsolution.temp_ctrl_on_temp
+
+    @override
+    def border_off(self, _config: Config):
+        return 0.0 if config.nsolution is None else config.nsolution.temp_ctrl_off_temp
+
+    @override
+    def time_min(self, _config: Config):
+        return (
+            0.0
+            if config.nsolution is None
+            else config.nsolution.temp_ctrl_time_off_above_min
+        )
 
 
 class TimersController(FuncController):
@@ -145,8 +200,15 @@ class OutFunc(Enum):
     FERTILIZER_B = 3  # удобрение B
     FERTILIZER_C = 4  # удобрение С
     WATER_REFILL = 5  # долив воды
-    CHILLER = 6  # чиллер
-    AIR_CONDITIONER = ClimateController(
+    CHILLER = ChillerLimitsController(
+        index=6,
+        name="чиллер",
+        sensor=Sensors.TEMP_SOLUTION,
+        delta={
+            Sensors.TEMP_SOLUTION: -0.04,
+        },
+    )
+    AIR_CONDITIONER = ClimateLimitsController(
         index=7,
         name="кондиционер",
         control=lambda c: c.air_cooler,
@@ -156,7 +218,7 @@ class OutFunc(Enum):
             Sensors.HUMIDITY_AIR: -0.01,  # кондиционер побочно сушит воздух
         },
     )
-    DEHUMIDIFIER = ClimateController(
+    DEHUMIDIFIER = ClimateLimitsController(
         index=8,
         name="осушитель",
         control=lambda c: c.dehumidifier,
@@ -166,7 +228,7 @@ class OutFunc(Enum):
             Sensors.TEMP_AIR: 0.008,  # побочный нагрев от компрессора
         },
     )
-    EXHAUST_FAN = ClimateController(
+    EXHAUST_FAN = ClimateLimitsController(
         index=9,
         name="вытяжка",
         control=lambda c: (
@@ -179,14 +241,14 @@ class OutFunc(Enum):
             Sensors.CO2: -2.0,  # быстро сбрасывает CO2 до уличных значений
         },
     )
-    HUMIDIFIER = ClimateController(
+    HUMIDIFIER = ClimateLimitsController(
         index=10,
         name="увлажнитель",
         control=lambda c: c.humidifier,
         sensor=Sensors.HUMIDITY_AIR,
         delta={Sensors.HUMIDITY_AIR: 0.04},  # увлажняет на +2.4% в минуту
     )
-    HEATER = ClimateController(
+    HEATER = ClimateLimitsController(
         index=11,
         name="обогреватель",
         control=lambda c: c.heater,
@@ -196,7 +258,7 @@ class OutFunc(Enum):
             Sensors.HUMIDITY_AIR: -0.01,  # физическое падение относительной влажности при нагреве
         },
     )
-    CO2_VALVE = ClimateController(
+    CO2_VALVE = ClimateLimitsController(
         index=12,
         name="клапан СО2",
         control=lambda c: c.co2,
@@ -207,9 +269,13 @@ class OutFunc(Enum):
         index=13,
         name="свет",
         timer=0,
+        delta={
+            Sensors.CO2: 0.02,
+        },
         delta_off={
-            Sensors.LIGHT: 5000.0,  # мгновенный приток освещенности (в люксах)
+            Sensors.LIGHT: 12212.0,  # мгновенный приток освещенности (в люксах)
             Sensors.TEMP_AIR: 0.005,  # побочный нагрев воздуха от ламп (0.3°C в минуту)
+            Sensors.CO2: -0.08,
         },
     )
     WATERING = TimersController(
@@ -236,30 +302,25 @@ for item in OutFunc:
 
 def step():
     state.description = ""
-    # Независимые параметры
+    # Пассивные параметры
     state.uptime += 1
     state.time = (state.time + 1) % 86400
 
-    state.values[Sensors.LIGHT.value].v = 0
+    Sensors.LIGHT.set(state, 37)
+    Sensors.TEMP_AIR.add(
+        state, (Sensors.TEMP_SOLUTION.get(state) - Sensors.TEMP_AIR.get(state)) * 0.0005
+    )
 
-    # TODO: other parms
+    # Раствор
+    # if Sensors.
 
-    # Климат
-    # for index in range(len(state.outs.func_cntdn_s)):
-    #     if state.outs.func_cntdn_s[index] > 0:
-    #         state.outs.func_cntdn_s[index] -= 1
-
+    # Климат/таймеры
     for index in range(len(state.outs.sum_on_s)):
-        # if state.outs.sum_on_s[index] > 0:
-        #     state.outs.sum_on_s[index] -= 1
-
         if config.outsfn:
             fid = config.outsfn[index]
             func = OUT_FUNCS[fid]
             if func:
                 func.step(config, state, index)
-
-    # Таймеры
 
 
 def apply_cfg(cfg: Config):

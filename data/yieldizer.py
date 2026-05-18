@@ -45,14 +45,14 @@ def fetch_value(values: list[Any], index: int, default: str | float):  # pyright
 def from_api(state: State):
     return GreenhouseState(
         values=SensorValues(
-            ph=Sensors.PH.from_state(state),
-            ec=Sensors.EC.from_state(state),
-            temp_solution=Sensors.TEMP_SOLUTION.from_state(state),
-            level=Sensors.LEVEL.from_state(state),
-            temp_air=Sensors.TEMP_AIR.from_state(state),
-            humidity_air=Sensors.HUMIDITY_AIR.from_state(state),
-            co2=Sensors.CO2.from_state(state),
-            light=Sensors.LIGHT.from_state(state),
+            ph=Sensors.PH.get(state),
+            ec=Sensors.EC.get(state),
+            temp_solution=Sensors.TEMP_SOLUTION.get(state),
+            level=Sensors.LEVEL.get(state),
+            temp_air=Sensors.TEMP_AIR.get(state),
+            humidity_air=Sensors.HUMIDITY_AIR.get(state),
+            co2=Sensors.CO2.get(state),
+            light=Sensors.LIGHT.get(state),
         ),
         description=state.description,
         uptime=state.uptime,

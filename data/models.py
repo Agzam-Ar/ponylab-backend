@@ -208,10 +208,17 @@ class Sensors(Enum):
     CO2 = 6
     LIGHT = 7
 
-    def from_state(self, state: State, default: float = 0.0):
+    def get(self, state: State, default: float = 0.0):
         if self.value < len(state.values):
             value = state.values[self.value].v
             if value is None:
                 return default
             return value
         return default
+
+    def set(self, state: State, value: float = 0.0):
+        if self.value < len(state.values):
+            state.values[self.value].v = value
+
+    def add(self, state: State, value: float = 0.0):
+        self.set(state, self.get(state) + value)
