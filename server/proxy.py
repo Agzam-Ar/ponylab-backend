@@ -3,12 +3,13 @@ from contextlib import asynccontextmanager
 from enum import Enum
 import os
 import random
+from time import time
 from typing import Callable, override
 
 from fastapi import APIRouter, Form, HTTPException, Response
 from fastapi.responses import HTMLResponse, PlainTextResponse
 from pydantic import BaseModel
-from data.models import Clim, ClimateControl, Cmd, Config, Sensors, State
+from data.models import Clim, ClimateControl, Cmd, Config, NSolution, Sensors, State
 from data.yieldizer import get, page
 from logs import trace
 from logs.trace import error
@@ -17,6 +18,8 @@ from logs.trace import error
 try:
     with open("server/snapshots/state.json", "r", encoding="utf-8") as f:
         state = State.model_validate_json(f.read())
+        state.time = int(time()) % 86400
+
     with open("server/snapshots/cfg.json", "r", encoding="utf-8") as f:
         config = Config.model_validate_json(f.read())
 except Exception as e:
@@ -25,7 +28,7 @@ except Exception as e:
 
 
 FALLBACK_FILE = os.getenv("FALLBACK_FILE", "server/yieldizer.html")
-SPEED_SCALE = 10
+SPEED_SCALE = 1
 
 
 class FuncController(BaseModel):
@@ -53,19 +56,17 @@ class FuncController(BaseModel):
         self.set_sum(state, out, sec)
         self.set_countdown(state, out, sec)
 
-    def set_desc(self, state: State, sec: float):
+    def set_desc(self, state: State, sec: float, text: str | None = None):
         s = int(abs(sec))
-        state.description += f"{self.name} {'вкл' if sec > 0 else 'выкл'} [{(s // 60):02d}:{(s % 60):02d}]<br>"
+        state.description += f"{self.name} {text if text is not None else 'вкл' if sec > 0 else 'выкл'} [{(s // 60):02d}:{(s % 60):02d}]<br>"
         pass
 
     def apply(self, state: State):
         for sensor, d in self.delta.items():
-            sv = state.values[sensor.value]
-            if sv.v:
-                if isinstance(d, float):
-                    sv.v += d + max(-1, min(1, random.uniform(-d, d) * 0.15))
-                elif isinstance(d, Callable):
-                    sv.v = d(sv.v)
+            if isinstance(d, float):
+                sensor.add(state, d + max(-1, min(1, random.uniform(-d, d) * 0.15)))
+            elif isinstance(d, Callable):
+                sensor.set(state, d(sensor.get(state)))
 
     def apply_off(self, state: State):
         for sensor, d in self.delta_off.items():
@@ -150,6 +151,38 @@ class ChillerLimitsController(LimitsController):
         )
 
 
+class SolutionController(FuncController):
+    _pause: float = 0
+    sensor: Sensors
+    trigger: Callable[[NSolution, float], bool]
+    time: Callable[[NSolution], float]
+
+    @override
+    def step(self, _config: Config, state: State, out: int):
+        sum = self.get_sum(state, out)
+        print(f"[{self.sensor.name}] пауза: {self._pause}")
+
+        if (
+            sum < 1
+            and self._pause < 1
+            and config.nsolution
+            and self.trigger(config.nsolution, self.sensor.get(state))
+        ):  # Под диапозоном - включаем
+            sum = self.time(config.nsolution)
+            self._pause = config.nsolution.mixing_time_min * 60
+
+        if sum > 0:
+            sum -= 1
+            self.apply(state)
+            self.set_desc(state, sum)
+        else:
+            if self._pause > 0:
+                self._pause -= 1
+                self.set_desc(state, self._pause, "запрет")
+            self.apply_off(state)
+        self.set_time(state, out, sum)
+
+
 class TimersController(FuncController):
     timer: int
 
@@ -194,12 +227,74 @@ class TimersController(FuncController):
 class OutFunc(Enum):
     OFF = 254
     ON = 255
-    PH_DOWN = 0
-    PH_UP = 1
-    FERTILIZER_A = 2  # удобрение А
-    FERTILIZER_B = 3  # удобрение B
-    FERTILIZER_C = 4  # удобрение С
-    WATER_REFILL = 5  # долив воды
+    PH_DOWN = SolutionController(
+        index=0,
+        name="pH DOWN",
+        sensor=Sensors.PH,
+        trigger=lambda s, v: v > s.ph_down_trig,
+        time=lambda s: s.pump_ph_down_quant_s,
+        delta={
+            Sensors.PH: -0.02,
+        },
+    )
+    PH_UP = SolutionController(
+        index=1,
+        name="pH UP",
+        sensor=Sensors.PH,
+        trigger=lambda s, v: v < s.ph_up_trig,
+        time=lambda s: s.pump_ph_up_quant_s,
+        delta={
+            Sensors.PH: 0.02,
+        },
+    )
+    FERTILIZER_A = SolutionController(
+        index=2,
+        name="удобрение A",
+        sensor=Sensors.EC,
+        trigger=lambda s, v: v < s.ec_up_trig_msm,
+        time=lambda s: s.pump_ec_up_quant_s,
+        delta={
+            Sensors.EC: 0.02,  # один квант работы насоса поднимает EC на 0.02 mS/cm
+            Sensors.PH: -0.01,  # побочное закисление раствора от концентрата
+        },
+    )
+    FERTILIZER_B = SolutionController(
+        index=3,
+        name="удобрение B",
+        sensor=Sensors.EC,
+        trigger=lambda s, v: v < s.ec_up_trig_msm,
+        time=lambda s: s.pump_ec_up_quant_s,
+        delta={
+            Sensors.EC: 0.02,
+            Sensors.PH: -0.01,
+        },
+    )
+    FERTILIZER_C = SolutionController(
+        index=4,
+        name="удобрение C",
+        sensor=Sensors.EC,
+        trigger=lambda s, v: v < s.ec_up_trig_msm,
+        time=lambda s: s.pump_ec_up_quant_s,
+        delta={
+            Sensors.EC: 0.02,
+            Sensors.PH: -0.005,  # разные компоненты могут влиять на pH с разной силой
+        },
+    )
+    WATER_REFILL = SolutionController(
+        index=5,
+        name="долив воды",
+        sensor=Sensors.LEVEL,
+        trigger=lambda s, v: v < 1,  # триггер по падению уровня жидкости
+        time=lambda s: s.pump_water_lvl_quant_s,
+        delta={
+            Sensors.LEVEL: lambda x: (
+                x + (1 if random.random() < 0.05 else 0)
+            ),  # уровень жидкости растет (рандом ибо требуются целые числа)
+            # Долив чистой воды разбавляет соли и меняет pH (лямбда или дельта смешивания):
+            Sensors.PH: lambda x: x * 0.99 + (7.5) * 0.01,
+            Sensors.EC: lambda x: x * 0.99 + (0.3) * 0.01,
+        },
+    )
     CHILLER = ChillerLimitsController(
         index=6,
         name="чиллер",
@@ -309,6 +404,7 @@ def step():
     # Пассивные параметры
     state.uptime += 1
     state.time = (state.time + 1) % 86400
+    state.wifi = random.randint(-43, -40)
 
     Sensors.LIGHT.set(state, 37)
     Sensors.TEMP_AIR.add(
