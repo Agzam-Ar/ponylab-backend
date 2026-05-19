@@ -79,13 +79,13 @@ def analyze(image_bytes: bytes, state: GreenhouseState):
     - График: начало дня в {light_start_time}, длина определяется тобой
 
     Текущее состояние:
-    - Температура: {state.values.temp_air}°C (Δ за {time20 // 60} мин: {d_temp:+.1f}°C)
-    - Влажность: {state.values.humidity_air}% (Δ за {time20 // 60} мин: {d_hum:+.1f}%)
-    - Раствор EC: {state.values.ec} (Δ за {time3h // 60} мин: {d_ec:+.2f})
-    - pH: {state.values.ph} (Δ за {time3h // 60} мин: {d_ph:+.2f})
+    - Температура: {state.values.temp_air:+.1f}°C (Δ за {time20 // 60} мин: {d_temp:+.1f}°C)
+    - Влажность: {state.values.humidity_air:+.1f}% (Δ за {time20 // 60} мин: {d_hum:+.1f}%)
+    - Раствор EC: {state.values.ec:+.1f} (Δ за {time3h // 60} мин: {d_ec:+.2f})
+    - pH: {state.values.ph:+.1f} (Δ за {time3h // 60} мин: {d_ph:+.2f})
     - VPD: {vdp:.2f} kPa
-    - CO2: {state.values.co2} ppm
-    - Освещенность: {state.values.light} lux
+    - CO2: {state.values.co2:+.1f} ppm
+    - Освещенность: {state.values.light:+.1f} lux
     - Ошибки: {state.errors}  
 
     Предыдущая тактика:
