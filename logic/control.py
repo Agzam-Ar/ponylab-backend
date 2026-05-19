@@ -3,9 +3,16 @@ from pathlib import Path
 from colorama import Fore
 
 from ai.analyze import AnalysisResult
-from data.models import Clim, ClimateControl, NSolution, TableItem, Timer, TimerData
-from data.yieldizer import (
+from data.models import (
+    Clim,
+    ClimateControl,
     GreenhouseState,
+    NSolution,
+    TableItem,
+    Timer,
+    TimerData,
+)
+from data.yieldizer import (
     send_climate,
     send_nsolution,
     send_timers,

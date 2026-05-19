@@ -1,4 +1,3 @@
-import os
 from typing import Any
 from urllib.parse import urlparse
 
@@ -15,8 +14,7 @@ from data.models import (
     State,
     Timer,
 )
-
-BASE_URL = os.getenv("YIELDIZER_URL", "http://127.0.0.1:3001")
+from server.config import Vars
 
 
 def _get_urls(base_url: str) -> list[str]:
@@ -33,7 +31,7 @@ def _get_urls(base_url: str) -> list[str]:
     return urls
 
 
-URLS = _get_urls(BASE_URL)
+URLS = _get_urls(Vars.YIELDIZER_URL)
 
 
 def fetch_value(values: list[Any], index: int, default: str | float):  # pyright: ignore[reportExplicitAny]

@@ -2,6 +2,8 @@ import io
 from pathlib import Path
 from typing import Any
 
+from server.config import Vars
+
 picamera2_available = True
 try:
     from picamera2 import Picamera2  # pyright: ignore[reportMissingTypeStubs]
@@ -9,8 +11,7 @@ except Exception:
     Picamera2 = None
     picamera2_available = False
 
-PLACEHOLDER_PATH = Path(__file__).parent / "placeholder.png"
-print(f"placeholder: {PLACEHOLDER_PATH}")
+PLACEHOLDER_PATH = Path(__file__).parent.parent / Vars.CAMERA_PLACEHOLDER
 
 
 class Camera:
@@ -18,7 +19,7 @@ class Camera:
 
     def __init__(self):
         self._cam: Any = None  # pyright: ignore[reportExplicitAny]
-        self._use_placeholder = not picamera2_available
+        self._use_placeholder = (not picamera2_available) or Vars.CAMERA_SKIP
 
     def _ensure_camera(self):
         if self._cam is None and not self._use_placeholder and Picamera2 is not None:  # pyright: ignore[reportAny]

@@ -1,70 +1,51 @@
+import os
+
+from colorama import Fore
+
 import logs.plant_log
 import logic.rules
 
-from pretty_errors import configure, FILENAME_EXTENDED, replace_stderr  # pyright: ignore[reportUnknownVariableType, reportMissingTypeStubs]
-import pretty_errors
 
-replace_stderr()
-# Настраиваем: выводить только файлы вашего проекта
-configure(
-    # --- КЛЮЧЕВЫЕ НАСТРОЙКИ ДЛЯ ВАШЕЙ ПРОБЛЕМЫ ---
-    top_first=True,  # МЕНЯЕТ ПОРЯДОК: теперь ваш код и корень ошибки будут ВВЕРХУ (как в Java)
-    always_display_bottom=False,  # Не дублировать ошибку в самом низу, если стек развернут
-    stack_depth=0,  # 0 — выводить весь стек (без ограничений по глубине)
-    # --- ЛОКАЛЬНЫЕ ПЕРЕМЕННЫЕ (Помогают понять контекст) ---
-    display_locals=True,  # Показывать локальные переменные в месте падения
-    display_trace_locals=False,  # Не спамить переменными на каждом шаге стека
-    truncate_locals=True,  # Обрезать слишком длинные значения переменных
-    # --- ВИЗУАЛЬНЫЕ ЭЛЕМЕНТЫ И СТРЕЛКИ ---
-    display_arrow=True,  # Показывать стрелочку на проблемную строку
-    arrow_head_character=">",  # Символ головы стрелки
-    arrow_tail_character="-",  # Символ тела стрелки
-    separator_character="-",  # Разделитель между кадрами стека
-    line_length=0,  # Длина разделительной линии (0 — на всю ширину терминала)
-    full_line_newline=False,
-    # --- АНАЛИЗ КОДА ---
-    lines_before=2,  # Сколько строк кода показывать ДО проблемной строки
-    lines_after=1,  # Сколько строк кода показывать ПОСЛЕ
-    trace_lines_before=1,  # Строки кода ДО для промежуточных кадров стека
-    trace_lines_after=0,  # Строки кода ПОСЛЕ для промежуточных кадров стека
-    truncate_code=False,  # Не обрезать строки кода
-    # --- ОТОБРАЖЕНИЕ ИМЕН И ССЫЛОК ---
-    filename_display=FILENAME_EXTENDED,  # Выводить относительный путь к файлу
-    display_link=True,  # Выводить кликабельную ссылку на файл (для VS Code/PyCharm)
-    line_number_first=True,  # Выводить номер строки перед именем файла
-    display_timestamp=False,  # Отключить временную метку (убирает лишний текст)
-    # --- ОБРАБОТКА ИСКЛЮЧЕНИЙ ---
-    exception_above=False,  # Выводить текст ошибки ПОД кодом (True — НАД кодом)
-    exception_below=True,
-    show_suppressed=False,  # Не показывать подавленные исключения
-    inner_exception_message="Внутреннее исключение:",
-    inner_exception_separator=True,  # Визуально разделять цепочки ошибок (Chained Exceptions)
-    # --- СИСТЕМНЫЕ НАСТРОЙКИ ---
-    reset_stdout=False,  # Не сбрасывать стандартный вывод терминала
-    name="my_config",
-    prefix="",
-    postfix="",
-    infix="  ",
-    # header_color=pretty_errors.BRIGHT_RED,
-    # exception_color=pretty_errors.BRIGHT_RED,
-    # exception_arg_color=pretty_errors.BRIGHT_YELLOW,
-    # exception_file_color=pretty_errors.RED,
-    # filename_color=pretty_errors.BRIGHT_CYAN,  # Ваши файлы будут ярко-голубыми
-    # function_color=pretty_errors.BRIGHT_GREEN,  # Имена функций — зелеными
-    # line_number_color=pretty_errors.CYAN,
-    # line_color=pretty_errors.CYAN,
-    # code_color=pretty_errors.WHITE,
-    # arrow_head_color=pretty_errors.BRIGHT_GREEN,
-    # arrow_tail_color=pretty_errors.GREEN,
-    # local_name_color=pretty_errors.BRIGHT_MAGENTA,  # Имена переменных — розовыми
-    # local_len_color=pretty_errors.MAGENTA,
-    # local_value_color=pretty_errors.WHITE,
-    # syntax_error_color=pretty_errors.BRIGHT_RED,
-    # timestamp_color=pretty_errors.BRIGHT_BLACK,
-    # link_color=pretty_errors.BRIGHT_BLACK,
-)
+def _bool(value: object):
+    return value is True or value == "True" or value == "1" or value == 1
 
 
-class Config:
+class Vars:
     rules: logic.rules.PlantRules = logic.rules.PlantRules()
     log: logs.plant_log.PlantLog = logs.plant_log.PlantLog()
+
+    LLM_BASE_URL: str = os.getenv("LLM_BASE_URL", "http://127.0.0.1:11435/v1")
+    LLM_API_KEY: str = os.getenv("LLM_API_KEY", "no-key-required")
+    LLM_SKIP: bool = _bool(os.getenv("LLM_SKIP", False))
+
+    CAMERA_PLACEHOLDER: str = os.getenv("CAMERA_PLACEHOLDER", "placeholder.png")
+    CAMERA_SKIP: bool = _bool(os.getenv("CAMERA_SKIP", False))
+
+    YIELDIZER_URL: str = os.getenv("YIELDIZER_URL", "http://127.0.0.1:3001")
+
+    REFRESH_TIME: int = int(os.getenv("REFRESH_TIME", 60 * 10))
+
+    @classmethod
+    def print_config(cls):
+        print("\n" + "=" * 20 + " LOADED CONFIG " + "=" * 20)
+        for key, value in cls.__dict__.items():  # pyright: ignore[reportAny]
+            if not key.startswith("__") and key not in ("rules", "log", "print_config"):
+                if "KEY" in key and value != "no-key-required":
+                    value = (
+                        f"{value[:4]}***{value[-4:]}" if len(str(value)) > 8 else "***"  # pyright: ignore[reportAny]
+                    )
+                color = Fore.LIGHTYELLOW_EX
+                if isinstance(value, int):
+                    color = Fore.LIGHTMAGENTA_EX
+                if value is True:
+                    color = Fore.GREEN
+                if value is False:
+                    color = Fore.LIGHTRED_EX
+                if isinstance(value, str) and value.startswith("http"):
+                    color = Fore.CYAN
+
+                print(f"{Fore.LIGHTBLUE_EX}{key:<20}{color} {value}{Fore.RESET}")
+        print(f"{'=' * 55}\n")
+
+
+Vars.print_config()

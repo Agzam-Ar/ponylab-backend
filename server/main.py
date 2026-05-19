@@ -1,12 +1,12 @@
 import asyncio
-from asyncio.tasks import Task
 import os
 import sys
+from asyncio.tasks import Task
 from pathlib import Path
 from typing import Never
 
-
 from logs.trace import error
+from server.config import Vars
 from server.proxy import proxy
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -22,10 +22,6 @@ from logic.control import Controller
 from logs.plant_log import PlantLog
 
 
-REFRESH_TIME = int(os.getenv("REFRESH_TIME", 60 * 10))
-PLANT_TYPE = os.getenv("PLANT_TYPE", "tomato")
-
-
 class GreenhouseServer:
     camera: Camera
     controller: Controller
@@ -35,10 +31,10 @@ class GreenhouseServer:
     def __init__(self):
         self.camera = Camera()
 
-        from server.config import Config
+        from server.config import Vars
 
-        self.controller = Controller(Config.rules)
-        self.plant_log = Config.log
+        self.controller = Controller(Vars.rules)
+        self.plant_log = Vars.log
         self._analysis_cache: AnalysisResult | None = None
 
     async def get_sensors(self):
@@ -99,7 +95,7 @@ class GreenhouseServer:
                 await self._update_analysis()
             except Exception as e:
                 print(f"Analysis error: {e}")
-            await asyncio.sleep(REFRESH_TIME)
+            await asyncio.sleep(Vars.REFRESH_TIME)
 
     def start_loop(self):
         self._loop_task = asyncio.create_task(self._run_loop())

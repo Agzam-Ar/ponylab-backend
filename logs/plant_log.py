@@ -1,19 +1,19 @@
 from __future__ import annotations
-from pathlib import Path
+
 import time
+from pathlib import Path
 
 from pydantic import BaseModel
 
-import data.yieldizer
-
 from ai.analyze import AnalysisResult
+from data.models import GreenhouseState
 
 LOGS_DIR = Path(__file__).parent.parent.parent / "data" / "logs"
 
 
 class StateSnapshot(BaseModel):
     timestamp: int
-    state: data.yieldizer.GreenhouseState
+    state: GreenhouseState
 
 
 class ResultSnapshot(BaseModel):
@@ -44,7 +44,7 @@ class PlantLog:
     def analysis_snapshot(self, result: AnalysisResult):
         self.results.append(ResultSnapshot(timestamp=self.now(), result=result))
 
-    def state_snapshot(self, state: data.yieldizer.GreenhouseState):
+    def state_snapshot(self, state: GreenhouseState):
         self.states.append(StateSnapshot(timestamp=self.now(), state=state))
 
     def find_state(self, ago: int):

@@ -4,17 +4,12 @@ import math
 import time
 from colorama import Fore
 import httpx
-import os
 from dataclasses import dataclass
-from openai import APIConnectionError, OpenAI
+from openai import APIError, OpenAI
 
-from data.yieldizer import GreenhouseState
+from data.models import GreenhouseState
 from logic.rules import PlantParms, auto_type
 from logs.trace import error
-
-LLM_BASE_URL = os.getenv("LLM_BASE_URL", "http://127.0.0.1:11435/v1")
-LLM_API_KEY = os.getenv("LLM_API_KEY", "sk-no-key-required")
-SKIP_AI = os.getenv("LLM_SKIP", False)
 
 
 @dataclass
@@ -44,7 +39,7 @@ def calculate_vpd(temp: float, humidity: float):
 def analyze(image_bytes: bytes, state: GreenhouseState):
     import server.config
 
-    Config = server.config.Config
+    Config = server.config.Vars
 
     log(f"\n{Fore.LIGHTBLUE_EX}[Image -> LLM]{Fore.RESET}")
 
@@ -107,7 +102,7 @@ def analyze(image_bytes: bytes, state: GreenhouseState):
     - Обязательно упомяни значения дельт (Δ) и объясни, почему ты меняешь или оставляешь текущие цели
     """
 
-    if SKIP_AI:
+    if Config.LLM_SKIP:
         log(f"{Fore.LIGHTYELLOW_EX}Skipped with default values{Fore.RESET}")
         recommended_parms: PlantParms = {}
         for parm, rule in Config.rules.iter():
@@ -124,13 +119,14 @@ def analyze(image_bytes: bytes, state: GreenhouseState):
         )
 
     try:
-        log(f"Сервер llm: {Fore.LIGHTCYAN_EX}{LLM_BASE_URL}{Fore.RESET}")
+        log(f"Сервер llm: {Fore.LIGHTCYAN_EX}{Config.LLM_BASE_URL}{Fore.RESET}")
         client = OpenAI(
-            base_url=LLM_BASE_URL, api_key=LLM_API_KEY, timeout=httpx.Timeout(None)
+            base_url=Config.LLM_BASE_URL,
+            api_key=Config.LLM_API_KEY,
+            timeout=httpx.Timeout(None),
         )
 
         b64 = encode_image(image_bytes)
-        # user_prompt = f"""Данные датчиков: {state.model_dump_json()}\nПроанализируй растение на фото."""
         log(f"=== Системный промпт ===\n{Fore.WHITE}{SYSTEM_PROMPT}{Fore.RESET}\n===")
         log(f"=== Промпт ===\n{Fore.WHITE}{user_prompt}{Fore.RESET}\n===")
         _start = time.perf_counter()
@@ -173,8 +169,8 @@ def analyze(image_bytes: bytes, state: GreenhouseState):
             rationale=data.get("rationale", ""),  # pyright: ignore[reportAny]
             action_summary=data.get("action_summary", ""),  # pyright: ignore[reportAny]
         )
-    except APIConnectionError as e:
-        print("LLM сервер не отвечает")
+    except APIError as e:
+        print(f"LLM сервер не отвечает: {e.message}")
     except Exception as e:
         print(f"An error occurred: {e}")
         error(e)

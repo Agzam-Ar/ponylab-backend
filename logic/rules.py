@@ -2,7 +2,7 @@ import csv
 from dataclasses import dataclass
 from pathlib import Path
 
-PLANT_DATA_DIR = Path(__file__).parent.parent / "data" / "plants"
+PLANT_DATA_DIR = Path(__file__).parent.parent / "config" / "plants"
 
 PlantValue = int | float | str
 
