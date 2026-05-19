@@ -22,6 +22,7 @@ class Vars:
     CAMERA_SKIP: bool = _bool(os.getenv("CAMERA_SKIP", False))
 
     YIELDIZER_URL: str = os.getenv("YIELDIZER_URL", "http://127.0.0.1:3001")
+    YIELDIZER_TIMEOUT: float = float(os.getenv("YIELDIZER_TIMEOUT", 1.0))
 
     REFRESH_TIME: int = int(os.getenv("REFRESH_TIME", 60 * 10))
 

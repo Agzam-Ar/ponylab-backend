@@ -1,19 +1,20 @@
 import asyncio
-from contextlib import asynccontextmanager
-from enum import Enum
 import os
 import random
+from contextlib import asynccontextmanager
+from enum import Enum
 from time import time
-from typing import Callable, override
+from typing import Annotated, Callable, override
 
 from fastapi import APIRouter, Form, HTTPException, Response
 from fastapi.responses import HTMLResponse, PlainTextResponse
 from pydantic import BaseModel
+
 from data.models import Clim, ClimateControl, Cmd, Config, NSolution, Sensors, State
-from data.yieldizer import get, page
+from data.yieldizer import form, get, page
 from logs import trace
 from logs.trace import error
-
+from server.config import Vars
 
 try:
     with open("server/snapshots/state.json", "r", encoding="utf-8") as f:
@@ -160,7 +161,6 @@ class SolutionController(FuncController):
     @override
     def step(self, _config: Config, state: State, out: int):
         sum = self.get_sum(state, out)
-        print(f"[{self.sensor.name}] пауза: {self._pause}")
 
         if (
             sum < 1
@@ -476,11 +476,9 @@ proxy = APIRouter(lifespan=proxy_lifespan)  # Создайте роутер
 
 @proxy.get("/ponylab")
 async def proxy_ponylab():
-    res = await page(0.25)
-    print(f"/ponylab: {res}")
+    res = await page(Vars.YIELDIZER_TIMEOUT)
     if res is not None:
         return res
-
     if os.path.exists(FALLBACK_FILE):
         with open(FALLBACK_FILE, "r", encoding="utf-8") as f:
             stub_data = f.read()
@@ -505,18 +503,31 @@ async def proxy_get_cfg():
     return config
 
 
+class CfgResponse(BaseModel):
+    text: str
+    wrong_values: list[str]
+
+
 @proxy.post("/cfg")
-async def proxy_post_cfg(jdata: str = Form(...)):
+async def proxy_post_cfg(jdata: Annotated[str, Form()]):
+    res = await form("/cfg", jdata, Vars.YIELDIZER_TIMEOUT)
+    if res is not None:
+        return res
+
     try:
         cfg = Config.model_validate_json(jdata)
         apply_cfg(cfg)
-        return {"text": "ok", "wrong_values": []}
+        return CfgResponse(text="ok", wrong_values=[])
     except Exception as e:
         raise HTTPException(status_code=422, detail=f"Ошибка: {e}")
 
 
 @proxy.post("/cmd")
-async def proxy_post_cfg(jdata: str = Form(...)):
+async def proxy_post_cmd(jdata: Annotated[str, Form()]):
+    res = await form("/cmd", jdata, Vars.YIELDIZER_TIMEOUT)
+    if res is not None:
+        return res
+
     try:
         cmd = Cmd.model_validate_json(jdata)
         apply_cmd(cmd)
@@ -525,11 +536,4 @@ async def proxy_post_cfg(jdata: str = Form(...)):
         raise HTTPException(status_code=422, detail=f"Ошибка: {e}")
 
 
-print("Proxy endpoints loaded")
-
-
-# Описываем логику старта и стопа секундного цикла для прокси
-
-
-# Создаем роутер и передаем ему свой lifespan
 router = APIRouter(lifespan=proxy_lifespan)

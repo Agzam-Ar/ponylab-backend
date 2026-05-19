@@ -81,10 +81,24 @@ async def fetch_state() -> GreenhouseState:
 
 
 async def get(url: str = "/", timeout: float = 1.0):
+    if timeout <= 0:
+        return None
     async with httpx.AsyncClient(timeout=timeout) as client:
         for base in URLS:
             try:
                 return await client.get(f"{base}{url}")
+            except Exception:
+                continue
+
+
+async def form(url: str = "/", body: str = "", timeout: float = 1.0):
+    if timeout <= 0:
+        return None
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        form_data = {"jdata": body}
+        for base in URLS:
+            try:
+                return await client.post(f"{base}{url}", data=form_data)
             except Exception:
                 continue
 
